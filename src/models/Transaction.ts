@@ -1,14 +1,27 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
+import UserScheme from "./UserScheme";
+import GoldPrice from "./GoldPrice";
+
+export type TransactionType = "deposit" | "withdrawal" | "points";
 
 class Transaction extends Model {
   public id!: string;
-  public userId!: string;
-  public schemeId!: string;
-  public transactionType!: "deposit" | "withdrawal" | "points";
+  public userSchemeId!: string;
+  public transactionType!: TransactionType;
   public amount!: number;
   public goldGrams!: number;
   public points!: number;
+  public priceRefId?: string;
+  public is_deleted!: boolean;
+  
+  // Timestamps
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+
+  // Associations
+  public readonly userScheme?: UserScheme;
+  public readonly goldPrice?: GoldPrice;
 }
 
 Transaction.init(
@@ -18,32 +31,46 @@ Transaction.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    userId: {
+    userSchemeId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: "Users", key: "id" },
-    },
-    schemeId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: { model: "Schemes", key: "id" },
+      references: {
+        model: "UserSchemes",
+        key: "id",
+      },
     },
     transactionType: {
       type: DataTypes.ENUM("deposit", "withdrawal", "points"),
       allowNull: false,
     },
     amount: {
-      type: DataTypes.FLOAT,
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
+      defaultValue: 0,
     },
     goldGrams: {
-      type: DataTypes.FLOAT,
-      allowNull: true,
+      type: DataTypes.DECIMAL(10, 3),
+      allowNull: false,
+      defaultValue: 0,
     },
     points: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
+      defaultValue: 0,
     },
+    priceRefId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: "GoldPrices",
+        key: "id",
+      },
+    },
+    is_deleted: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    }
   },
   {
     sequelize,

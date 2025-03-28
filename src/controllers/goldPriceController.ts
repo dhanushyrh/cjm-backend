@@ -3,6 +3,7 @@ import { Transaction } from "sequelize";
 import sequelize from "../config/database";
 import GoldPrice from "../models/GoldPrice";
 import { goldPriceEmitter } from "../events/goldPriceEvents";
+import { getLastNDaysGoldPrices } from "../services/goldPriceService";
 
 // Add or update daily gold price
 export const setGoldPrice = async (req: Request, res: Response) => {
@@ -100,6 +101,7 @@ export const setGoldPrice = async (req: Request, res: Response) => {
 export const getGoldPrices = async (_req: Request, res: Response) => {
   try {
     const prices = await GoldPrice.findAll({ 
+      where: { is_deleted: false },
       order: [["date", "DESC"]],
       attributes: ['id', 'date', 'pricePerGram', 'createdAt', 'updatedAt']
     });
@@ -116,5 +118,84 @@ export const getGoldPrices = async (_req: Request, res: Response) => {
     });
 
     res.status(500).json({ error: "Failed to fetch gold prices" });
+  }
+};
+
+export const getGoldPriceGraph = async (req: Request, res: Response) => {
+  try {
+    const days = parseInt(req.query.days as string) || 30; // Default to 30 days if not specified
+
+    // Validate days parameter
+    if (isNaN(days) || days <= 0 || days > 365) {
+      return res.status(400).json({
+        error: "Invalid days parameter",
+        details: "Days must be a number between 1 and 365"
+      });
+    }
+
+    const graphData = await getLastNDaysGoldPrices(days);
+
+    // Add summary statistics
+    const summary = {
+      totalDays: graphData.data.length,
+      currentPrice: graphData.data[graphData.data.length - 1]?.pricePerGram || 0,
+      lowestPrice: Math.min(...graphData.data.map(d => d.pricePerGram)),
+      highestPrice: Math.max(...graphData.data.map(d => d.pricePerGram)),
+      overallChange: graphData.data.length > 1 
+        ? graphData.data[graphData.data.length - 1].pricePerGram - graphData.data[0].pricePerGram 
+        : 0,
+      overallChangePercentage: graphData.data.length > 1
+        ? ((graphData.data[graphData.data.length - 1].pricePerGram - graphData.data[0].pricePerGram) / graphData.data[0].pricePerGram) * 100
+        : 0
+    };
+
+    res.status(200).json({
+      message: "Gold price graph data retrieved successfully",
+      data: graphData,
+      summary
+    });
+  } catch (error: any) {
+    console.error("Gold Price Graph Error:", {
+      message: error.message,
+      stack: error.stack,
+      details: error.errors || error
+    });
+
+    res.status(500).json({ error: "Failed to retrieve gold price graph data" });
+  }
+};
+
+// Get today's latest gold price
+export const getCurrentGoldPrice = async (_req: Request, res: Response) => {
+  try {
+    const currentPrice = await GoldPrice.findOne({
+      where: { is_deleted: false },
+      order: [["date", "DESC"]],
+      attributes: ['id', 'date', 'pricePerGram', 'createdAt']
+    });
+
+    if (!currentPrice) {
+      return res.status(404).json({
+        error: "Not Found",
+        details: "No active gold price found"
+      });
+    }
+
+    res.status(200).json({
+      message: "Current gold price fetched successfully",
+      data: {
+        id: currentPrice.id,
+        date: currentPrice.date,
+        pricePerGram: currentPrice.pricePerGram
+      }
+    });
+  } catch (error: any) {
+    console.error("Current Gold Price Fetch Error:", {
+      message: error.message,
+      stack: error.stack,
+      details: error.errors || error
+    });
+
+    res.status(500).json({ error: "Failed to fetch current gold price" });
   }
 };

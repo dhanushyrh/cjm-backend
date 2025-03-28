@@ -3,12 +3,13 @@ import UserScheme, { UserSchemeStatus } from "../models/UserScheme";
 import User from "../models/User";
 import Scheme from "../models/Scheme";
 import { addMonths } from "date-fns";
+import { createInitialDeposit } from "./transactionService";
 
 export const createUserScheme = async (
   userId: string,
   schemeId: string,
   transaction?: Transaction
-) => {
+): Promise<{ userScheme: UserScheme; initialDeposit: any }> => {
   // Check if user already has an active scheme
   const existingScheme = await UserScheme.findOne({
     where: {
@@ -41,7 +42,10 @@ export const createUserScheme = async (
     status: "ACTIVE"
   }, { transaction });
 
-  return userScheme;
+  // Create initial deposit transaction
+  const initialDeposit = await createInitialDeposit(userScheme.id, transaction);
+
+  return { userScheme, initialDeposit };
 };
 
 export const getUserSchemes = async (userId: string) => {

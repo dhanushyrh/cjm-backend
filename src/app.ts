@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import adminAuthRoutes from "./routes/adminAuthRoutes";
 import oas from "express-oas-generator";
+import goldPriceRoutes from "./routes/goldPriceRoutes";
 
 dotenv.config();
 const app = express();
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminAuthRoutes);
+app.use("/api/gold-prices", goldPriceRoutes);
 
 app.get("/", async (req, res) => {
   try {

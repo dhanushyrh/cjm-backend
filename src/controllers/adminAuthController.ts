@@ -131,11 +131,11 @@ export const registerUser = async (req: Request, res: Response) => {
         dob: parsedDob,
         schemeId 
       }, { transaction: t });
-      
-      // Create user-scheme mapping
-      const userScheme = await createUserScheme(user.id, schemeId, t);
 
-      return { user, userScheme };
+      // Create user-scheme mapping and initial deposit
+      const { userScheme, initialDeposit } = await createUserScheme(user.id, schemeId, t);
+
+      return { user, userScheme, initialDeposit };
     });
 
     const serializedUser = serializeUser(result.user);
@@ -143,7 +143,8 @@ export const registerUser = async (req: Request, res: Response) => {
     res.status(201).json({
       message: "User registered successfully!",
       user: serializedUser,
-      scheme: result.userScheme
+      scheme: result.userScheme,
+      initialDeposit: result.initialDeposit
     });
   } catch (error: any) {
     console.error("User Registration Error:", {
