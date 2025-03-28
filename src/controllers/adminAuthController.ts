@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
+import { Transaction } from "sequelize";
+import sequelize from "../config/database";
 import Admin from "../models/Admin";
 import User from "../models/User";
 import { hashAdminPassword, compareAdminPassword, generateAdminToken } from "../services/adminAuthService";
 import { hashPassword } from "../services/authService";
 import { serializeAdmin } from "../serializers/adminSerializer";
 import { serializeUser } from "../serializers/userSerializer";
+import { createUserScheme } from "../services/userSchemeService";
 
 // Register a new admin
 export const registerAdmin = async (req: Request, res: Response) => {
@@ -114,20 +117,34 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid date format. Please provide date in YYYY-MM-DD format" });
     }
 
-    const user = await User.create({ 
-      name, 
-      email, 
-      password: hashedPassword, 
-      nominee, 
-      relation, 
-      address, 
-      mobile, 
-      dob: parsedDob,
-      schemeId 
-    });
-    const serializedUser = serializeUser(user);
+    // Start a transaction to ensure both user and scheme mapping are created
+    const result = await sequelize.transaction(async (t: Transaction) => {
+      // Create user
+      const user = await User.create({ 
+        name, 
+        email, 
+        password: hashedPassword, 
+        nominee, 
+        relation, 
+        address, 
+        mobile, 
+        dob: parsedDob,
+        schemeId 
+      }, { transaction: t });
+      
+      // Create user-scheme mapping
+      const userScheme = await createUserScheme(user.id, schemeId, t);
 
-    res.status(201).json({ message: "User registered successfully!", user: serializedUser });
+      return { user, userScheme };
+    });
+
+    const serializedUser = serializeUser(result.user);
+
+    res.status(201).json({
+      message: "User registered successfully!",
+      user: serializedUser,
+      scheme: result.userScheme
+    });
   } catch (error: any) {
     console.error("User Registration Error:", {
       message: error.message,

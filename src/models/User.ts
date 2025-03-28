@@ -1,5 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
+import UserScheme from "./UserScheme";
 
 class User extends Model {
   public id!: string;
@@ -13,6 +14,13 @@ class User extends Model {
   public dob!: Date;
   public agreeTerms!: boolean;
   public schemeId?: string;
+
+  // Timestamps
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+
+  // Associations
+  public readonly schemes?: UserScheme[];
 }
 
 User.init(
@@ -63,7 +71,7 @@ User.init(
     },
     schemeId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       references: { model: "Schemes", key: "id" },
     },
   },
