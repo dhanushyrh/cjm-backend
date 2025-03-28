@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
+import { Transaction } from "sequelize";
+import sequelize from "../config/database";
 import GoldPrice from "../models/GoldPrice";
+import { goldPriceEmitter } from "../events/goldPriceEvents";
 
 // Add or update daily gold price
 export const setGoldPrice = async (req: Request, res: Response) => {
@@ -34,14 +37,39 @@ export const setGoldPrice = async (req: Request, res: Response) => {
       });
     }
 
-    const [goldPrice, created] = await GoldPrice.upsert({ 
-      date: parsedDate.toISOString().split('T')[0], 
-      pricePerGram 
+    const formattedDate = parsedDate.toISOString().split('T')[0];
+
+    // Use transaction to ensure data consistency
+    const result = await sequelize.transaction(async (t: Transaction) => {
+      // Find existing price for the date
+      const existingPrice = await GoldPrice.findOne({
+        where: {
+          date: formattedDate,
+          is_deleted: false
+        },
+        transaction: t
+      });
+
+      // If exists, mark it as deleted
+      if (existingPrice) {
+        await existingPrice.update({ is_deleted: true }, { transaction: t });
+      }
+
+      // Create new price entry
+      const newPrice = await GoldPrice.create({
+        date: formattedDate,
+        pricePerGram
+      }, { transaction: t });
+
+      return newPrice;
     });
 
+    // Emit event for price analysis
+    goldPriceEmitter.emit("goldPriceSet", result);
+
     res.status(200).json({
-      message: created ? "Gold price added successfully!" : "Gold price updated successfully!",
-      goldPrice,
+      message: "Gold price set successfully!",
+      goldPrice: result
     });
   } catch (error: any) {
     console.error("Gold Price Set Error:", {
@@ -54,6 +82,13 @@ export const setGoldPrice = async (req: Request, res: Response) => {
       return res.status(400).json({ 
         error: "Validation Error", 
         details: error.errors.map((err: any) => err.message)
+      });
+    }
+
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res.status(400).json({ 
+        error: "Duplicate Entry",
+        details: "A gold price for this date already exists"
       });
     }
 
