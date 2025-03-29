@@ -10,6 +10,8 @@ import oas from "express-oas-generator";
 import goldPriceRoutes from "./routes/goldPriceRoutes";
 import pointRedemptionRoutes from "./routes/pointRedemptionRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 dotenv.config();
 const app = express();
@@ -25,6 +27,9 @@ app.use("/api/user", userRoutes);
 app.use("/api/admin", adminAuthRoutes);
 app.use("/api/gold-prices", goldPriceRoutes);
 app.use("/api/points", pointRedemptionRoutes);
+
+// Swagger documentation
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/", async (req, res) => {
   try {
