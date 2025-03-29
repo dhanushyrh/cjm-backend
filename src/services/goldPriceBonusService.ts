@@ -99,7 +99,8 @@ export const calculateAndAddBonusPoints = async (newPrice: GoldPrice, previousPr
             amount: amount,
             goldGrams: 0, // No gold grams for bonus points
             points: schemePoints,
-            priceRefId: newPrice.id // Add reference to the gold price
+            priceRefId: newPrice.id, // Add reference to the gold price
+            description: `Bonus points awarded for gold price ${priceDifference > 0 ? 'increase' : 'maintenance'}`
           });
 
           // Update available points in UserScheme

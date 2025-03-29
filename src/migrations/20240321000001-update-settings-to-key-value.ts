@@ -1,7 +1,8 @@
 import { QueryInterface, DataTypes } from "sequelize";
 
-export default {
-  up: async (queryInterface: QueryInterface) => {
+module.exports = {
+  name: '20240321000001-update-settings-to-key-value',
+  async up({ context: queryInterface }: { context: QueryInterface }) {
     // Drop the existing columns
     await queryInterface.removeColumn("Settings", "defaultBonusPoints");
     await queryInterface.removeColumn("Settings", "bonusModValue");
@@ -39,7 +40,7 @@ export default {
     ]);
   },
 
-  down: async (queryInterface: QueryInterface) => {
+  async down({ context: queryInterface }: { context: QueryInterface }) {
     // Remove new columns
     await queryInterface.removeColumn("Settings", "key");
     await queryInterface.removeColumn("Settings", "value");

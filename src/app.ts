@@ -9,6 +9,7 @@ import adminAuthRoutes from "./routes/adminAuthRoutes";
 import oas from "express-oas-generator";
 import goldPriceRoutes from "./routes/goldPriceRoutes";
 import pointRedemptionRoutes from "./routes/pointRedemptionRoutes";
+import userSchemeRoutes from "./routes/userSchemeRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
@@ -27,6 +28,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/admin", adminAuthRoutes);
 app.use("/api/gold-prices", goldPriceRoutes);
 app.use("/api/points", pointRedemptionRoutes);
+app.use("/api/user-schemes", userSchemeRoutes);
 
 // Swagger documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

@@ -1,7 +1,8 @@
 import { QueryInterface, DataTypes } from "sequelize";
 
-export default {
-  up: async (queryInterface: QueryInterface) => {
+module.exports = {
+  name: '20240321000000-create-settings',
+  async up({ context: queryInterface }: { context: QueryInterface }) {
     await queryInterface.createTable("Settings", {
       id: {
         type: DataTypes.UUID,
@@ -34,7 +35,7 @@ export default {
     });
   },
 
-  down: async (queryInterface: QueryInterface) => {
+  async down({ context: queryInterface }: { context: QueryInterface }) {
     await queryInterface.dropTable("Settings");
   }
 }; 

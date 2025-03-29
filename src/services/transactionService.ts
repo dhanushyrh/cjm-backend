@@ -13,6 +13,7 @@ interface CreateTransactionParams {
   points: number;
   priceRefId?: string;
   redeemReqId?: string;
+  description?: string;
   transaction?: SequelizeTransaction;
 }
 
@@ -70,7 +71,7 @@ interface TransactionExportSummary {
 }
 
 export const createTransaction = async (params: CreateTransactionParams): Promise<Transaction> => {
-  const { userSchemeId, transactionType, amount, goldGrams, points, priceRefId, transaction } = params;
+  const { userSchemeId, transactionType, amount, goldGrams, points, priceRefId, description, transaction } = params;
 
   const newTransaction = await Transaction.create({
     userSchemeId,
@@ -79,6 +80,7 @@ export const createTransaction = async (params: CreateTransactionParams): Promis
     goldGrams,
     points,
     priceRefId,
+    description,
     is_deleted: false
   }, { transaction });
 
@@ -127,6 +129,7 @@ export const createInitialDeposit = async (
     goldGrams: userScheme.scheme.goldGrams,
     points: 0,
     priceRefId: currentGoldPrice.id,
+    description: `Initial deposit for ${userScheme.scheme.name} scheme`,
     transaction
   });
 };

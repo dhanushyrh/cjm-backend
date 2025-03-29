@@ -15,6 +15,7 @@ class Transaction extends Model {
   public priceRefId?: string;
   public is_deleted!: boolean;
   public redeemReqId?: string;
+  public description?: string;
   
   // Timestamps
   public readonly createdAt!: Date;
@@ -79,6 +80,10 @@ Transaction.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    description: {
+      type: DataTypes.STRING,
+      allowNull: true,
     }
   },
   {
