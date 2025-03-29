@@ -71,7 +71,7 @@ Transaction.init(
       type: DataTypes.UUID,
       allowNull: true,
       references: {
-        model: "redemption_requests",
+        model: "RedemptionRequests",
         key: "id"
       }
     },

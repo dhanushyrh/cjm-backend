@@ -39,6 +39,7 @@ export const createUserScheme = async (
     startDate,
     endDate,
     totalPoints: 0,
+    availablePoints: 0,
     status: "ACTIVE"
   }, { transaction });
 
