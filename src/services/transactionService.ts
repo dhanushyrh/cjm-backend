@@ -7,11 +7,12 @@ import GoldPrice from "../models/GoldPrice";
 
 interface CreateTransactionParams {
   userSchemeId: string;
-  transactionType: TransactionType;
+  transactionType: string;
   amount: number;
   goldGrams: number;
   points: number;
   priceRefId?: string;
+  redeemReqId?: string;
   transaction?: SequelizeTransaction;
 }
 

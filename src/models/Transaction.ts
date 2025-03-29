@@ -3,7 +3,7 @@ import sequelize from "../config/database";
 import UserScheme from "./UserScheme";
 import GoldPrice from "./GoldPrice";
 
-export type TransactionType = "deposit" | "withdrawal" | "points";
+export type TransactionType = "deposit" | "withdrawal" | "points" | "bonus_withdrawal";
 
 class Transaction extends Model {
   public id!: string;
@@ -14,6 +14,7 @@ class Transaction extends Model {
   public points!: number;
   public priceRefId?: string;
   public is_deleted!: boolean;
+  public redeemReqId?: string;
   
   // Timestamps
   public readonly createdAt!: Date;
@@ -40,7 +41,7 @@ Transaction.init(
       },
     },
     transactionType: {
-      type: DataTypes.ENUM("deposit", "withdrawal", "points"),
+      type: DataTypes.ENUM("deposit", "withdrawal", "points", "bonus_withdrawal"),
       allowNull: false,
     },
     amount: {
@@ -65,6 +66,14 @@ Transaction.init(
         model: "GoldPrices",
         key: "id",
       },
+    },
+    redeemReqId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: "redemption_requests",
+        key: "id"
+      }
     },
     is_deleted: {
       type: DataTypes.BOOLEAN,

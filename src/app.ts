@@ -8,6 +8,8 @@ import userRoutes from "./routes/userRoutes";
 import adminAuthRoutes from "./routes/adminAuthRoutes";
 import oas from "express-oas-generator";
 import goldPriceRoutes from "./routes/goldPriceRoutes";
+import pointRedemptionRoutes from "./routes/pointRedemptionRoutes";
+import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
 
 dotenv.config();
 const app = express();
@@ -22,6 +24,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminAuthRoutes);
 app.use("/api/gold-prices", goldPriceRoutes);
+app.use("/api/points", pointRedemptionRoutes);
 
 app.get("/", async (req, res) => {
   try {
@@ -31,5 +34,8 @@ app.get("/", async (req, res) => {
     res.status(500).send("Database connection failed");
   }
 });
+
+// Start schedulers
+startPointsRecalculationScheduler();
 
 export default app;

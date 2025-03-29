@@ -12,6 +12,7 @@ class UserScheme extends Model {
   public startDate!: Date;
   public endDate!: Date;
   public totalPoints!: number;
+  public availablePoints!: number;
   public status!: UserSchemeStatus;
 
   // Timestamps
@@ -59,11 +60,16 @@ UserScheme.init(
       allowNull: false,
       defaultValue: 0,
     },
+    availablePoints: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
     status: {
       type: DataTypes.ENUM("ACTIVE", "COMPLETED", "WITHDRAWN"),
       allowNull: false,
       defaultValue: "ACTIVE",
-    },
+    }
   },
   {
     sequelize,

@@ -92,7 +92,8 @@ export const calculateAndAddBonusPoints = async (newPrice: GoldPrice, previousPr
           // Calculate amount based on the new price
           const amount = Number(userScheme.scheme.goldGrams) * Number(newPrice.pricePerGram);
           
-          return await createTransaction({
+          // Create bonus transaction
+          const bonusTransaction = await createTransaction({
             userSchemeId: userScheme.id,
             transactionType: "points",
             amount: amount,
@@ -100,6 +101,13 @@ export const calculateAndAddBonusPoints = async (newPrice: GoldPrice, previousPr
             points: schemePoints,
             priceRefId: newPrice.id // Add reference to the gold price
           });
+
+          // Update available points in UserScheme
+          await userScheme.update({
+            availablePoints: userScheme.availablePoints + schemePoints
+          });
+
+          return bonusTransaction;
         } catch (error) {
           console.error(`Failed to create bonus transaction for userScheme ${userScheme.id}:`, error);
           return null;
