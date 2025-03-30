@@ -275,12 +275,74 @@ router.post("/scheme", authenticateAdmin as RequestHandler, addScheme as Request
  * /api/admin/schemes:
  *   get:
  *     tags: [Scheme Management]
- *     summary: Get all schemes
+ *     summary: Get all schemes with pagination
+ *     description: Retrieves a paginated list of all schemes
  *     security:
  *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of schemes per page
  *     responses:
  *       200:
  *         description: List of schemes retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       name:
+ *                         type: string
+ *                       duration:
+ *                         type: integer
+ *                       goldGrams:
+ *                         type: number
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total number of schemes
+ *                     page:
+ *                       type: integer
+ *                       description: Current page number
+ *                     limit:
+ *                       type: integer
+ *                       description: Number of schemes per page
+ *                     pages:
+ *                       type: integer
+ *                       description: Total number of pages
+ *       400:
+ *         description: Bad request - Invalid pagination parameters
  *       401:
  *         description: Unauthorized
  */

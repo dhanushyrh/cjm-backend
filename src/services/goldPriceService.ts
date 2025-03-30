@@ -237,4 +237,41 @@ export const getLastNDaysGoldPrices = async (days: number): Promise<{ data: Gold
   const result = { data: graphData, statistics };
 
   return result;
+};
+
+export interface PaginationResult<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export const getPaginatedGoldPrices = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<PaginationResult<GoldPrice>> => {
+  const offset = (page - 1) * limit;
+  
+  const { count, rows } = await GoldPrice.findAndCountAll({ 
+    where: { is_deleted: false },
+    limit,
+    offset,
+    order: [["date", "DESC"]],
+    attributes: ['id', 'date', 'pricePerGram', 'createdAt', 'updatedAt']
+  });
+  
+  const pages = Math.ceil(count / limit);
+  
+  return {
+    data: rows,
+    pagination: {
+      total: count,
+      page,
+      limit,
+      pages
+    }
+  };
 }; 

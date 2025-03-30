@@ -49,13 +49,33 @@ export const addScheme = async (req: Request, res: Response) => {
   }
 };
 
-export const fetchSchemes = async (_req: Request, res: Response) => {
+export const fetchSchemes = async (req: Request, res: Response) => {
   try {
-    const schemes = await getAllSchemes();
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json({ 
+        error: "Invalid page value",
+        details: "Page must be greater than 0"
+      });
+    }
+    
+    if (limit < 1 || limit > 100) {
+      return res.status(400).json({ 
+        error: "Invalid limit value",
+        details: "Limit must be between 1 and 100"
+      });
+    }
+    
+    const result = await getAllSchemes(page, limit);
     
     res.status(200).json({
-      message: "Schemes fetched successfully",
-      data: schemes
+      success: true,
+      data: result.data,
+      pagination: result.pagination
     });
   } catch (error: any) {
     console.error("Scheme Fetch Error:", {
@@ -64,7 +84,10 @@ export const fetchSchemes = async (_req: Request, res: Response) => {
       details: error.errors || error
     });
 
-    res.status(500).json({ error: "Failed to fetch schemes" });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch schemes" 
+    });
   }
 };
 

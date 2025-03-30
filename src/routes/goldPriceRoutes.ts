@@ -126,8 +126,123 @@ router.get("/graph", (getGoldPriceGraph as unknown) as RequestHandler);
  */
 router.post("/", authenticateAdmin as RequestHandler, (setGoldPrice as unknown) as RequestHandler);
 
-// Public routes
+/**
+ * @swagger
+ * /api/gold-price/current:
+ *   get:
+ *     tags: [Gold Price]
+ *     summary: Get current gold price
+ *     description: Retrieves the latest active gold price
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current gold price retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     date:
+ *                       type: string
+ *                       format: date
+ *                     pricePerGram:
+ *                       type: number
+ *                       format: float
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       404:
+ *         description: No active gold price found
+ *       401:
+ *         description: Unauthorized
+ */
 router.get("/current", getCurrentGoldPrice as RequestHandler);
+
+/**
+ * @swagger
+ * /api/gold-prices:
+ *   get:
+ *     tags: [Gold Price]
+ *     summary: Get gold price history with pagination
+ *     description: Retrieves a paginated list of gold prices in descending order by date
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of prices per page
+ *     responses:
+ *       200:
+ *         description: Gold price history retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       date:
+ *                         type: string
+ *                         format: date
+ *                       pricePerGram:
+ *                         type: number
+ *                         format: float
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total number of gold prices
+ *                     page:
+ *                       type: integer
+ *                       description: Current page number
+ *                     limit:
+ *                       type: integer
+ *                       description: Number of gold prices per page
+ *                     pages:
+ *                       type: integer
+ *                       description: Total number of pages
+ *       400:
+ *         description: Bad request - Invalid pagination parameters
+ */
 router.get("/", getGoldPrices as RequestHandler);
 
 export default router; 

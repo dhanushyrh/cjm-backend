@@ -4,8 +4,39 @@ export const createScheme = async (name: string, duration: number, goldGrams: nu
   return await Scheme.create({ name, duration, goldGrams });
 };
 
-export const getAllSchemes = async () => {
-  return await Scheme.findAll();
+export interface PaginationResult<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export const getAllSchemes = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<PaginationResult<Scheme>> => {
+  const offset = (page - 1) * limit;
+  
+  const { count, rows } = await Scheme.findAndCountAll({
+    limit,
+    offset,
+    order: [['createdAt', 'DESC']]
+  });
+  
+  const pages = Math.ceil(count / limit);
+  
+  return {
+    data: rows,
+    pagination: {
+      total: count,
+      page,
+      limit,
+      pages
+    }
+  };
 };
 
 export const getSchemeById = async (id: string) => {

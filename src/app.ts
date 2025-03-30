@@ -18,7 +18,20 @@ dotenv.config();
 const app = express();
 oas.init(app as any, {});
 
-app.use(cors());
+// Configure CORS
+const corsOptions = {
+  origin: [
+    'http://localhost:8080',
+    'http://localhost:3000',
+    /\.ngrok-free\.app$/  // Allow all ngrok URLs
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+};
+
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(express.json());
 

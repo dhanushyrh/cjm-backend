@@ -3,7 +3,7 @@ import { Transaction } from "sequelize";
 import sequelize from "../config/database";
 import GoldPrice from "../models/GoldPrice";
 import { goldPriceEmitter } from "../events/goldPriceEvents";
-import { getLastNDaysGoldPrices } from "../services/goldPriceService";
+import { getLastNDaysGoldPrices, getPaginatedGoldPrices } from "../services/goldPriceService";
 
 // Add or update daily gold price
 export const setGoldPrice = async (req: Request, res: Response) => {
@@ -97,18 +97,36 @@ export const setGoldPrice = async (req: Request, res: Response) => {
   }
 };
 
-// Get gold price history
-export const getGoldPrices = async (_req: Request, res: Response) => {
+// Get gold price history with pagination
+export const getGoldPrices = async (req: Request, res: Response) => {
   try {
-    const prices = await GoldPrice.findAll({ 
-      where: { is_deleted: false },
-      order: [["date", "DESC"]],
-      attributes: ['id', 'date', 'pricePerGram', 'createdAt', 'updatedAt']
-    });
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid page value",
+        details: "Page must be greater than 0"
+      });
+    }
+    
+    if (limit < 1 || limit > 100) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid limit value",
+        details: "Limit must be between 1 and 100"
+      });
+    }
+    
+    const result = await getPaginatedGoldPrices(page, limit);
     
     res.status(200).json({
-      message: "Gold prices fetched successfully",
-      data: prices
+      success: true,
+      data: result.data,
+      pagination: result.pagination
     });
   } catch (error: any) {
     console.error("Gold Price Fetch Error:", {
@@ -117,7 +135,10 @@ export const getGoldPrices = async (_req: Request, res: Response) => {
       details: error.errors || error
     });
 
-    res.status(500).json({ error: "Failed to fetch gold prices" });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch gold prices" 
+    });
   }
 };
 
