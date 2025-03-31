@@ -3,14 +3,36 @@ import { getAllUsers, assignUserToScheme, deleteUser } from "../services/userSer
 import { serializeUser, serializeUsers } from "../serializers/userSerializer";
 import User from "../models/User";
 
-export const fetchUsers = async (_req: Request, res: Response) => {
+export const fetchUsers = async (req: Request, res: Response) => {
   try {
-    const users = await getAllUsers();
-    const serializedUsers = serializeUsers(users);
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid page value",
+        details: "Page must be greater than 0"
+      });
+    }
+    
+    if (limit < 1 || limit > 100) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid limit value",
+        details: "Limit must be between 1 and 100"
+      });
+    }
+    
+    const result = await getAllUsers(page, limit);
+    const serializedUsers = serializeUsers(result.data);
     
     res.status(200).json({
-      message: "Users fetched successfully",
-      data: serializedUsers
+      success: true,
+      data: serializedUsers,
+      pagination: result.pagination
     });
   } catch (error: any) {
     console.error("User Fetch Error:", {
@@ -19,7 +41,10 @@ export const fetchUsers = async (_req: Request, res: Response) => {
       details: error.errors || error
     });
 
-    res.status(500).json({ error: "Failed to fetch users" });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch users" 
+    });
   }
 };
 

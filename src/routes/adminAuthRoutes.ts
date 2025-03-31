@@ -158,16 +158,91 @@ router.post("/user/register", authenticateAdmin as RequestHandler, registerUser 
  * /api/admin/users:
  *   get:
  *     tags: [User Management]
- *     summary: Get all users
+ *     summary: Get all users with pagination
+ *     description: Retrieves a paginated list of all users
  *     security:
  *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of users per page
  *     responses:
  *       200:
  *         description: List of users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       mobile:
+ *                         type: string
+ *                       address:
+ *                         type: string
+ *                       nominee:
+ *                         type: string
+ *                       relation:
+ *                         type: string
+ *                       dob:
+ *                         type: string
+ *                         format: date
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       scheme:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total number of users
+ *                     page:
+ *                       type: integer
+ *                       description: Current page number
+ *                     limit:
+ *                       type: integer
+ *                       description: Number of users per page
+ *                     pages:
+ *                       type: integer
+ *                       description: Total number of pages
+ *       400:
+ *         description: Bad request - Invalid pagination parameters
  *       401:
  *         description: Unauthorized
  */
-router.get("/users", authenticateAdmin as RequestHandler, fetchUsers);
+router.get("/users", authenticateAdmin as RequestHandler, fetchUsers as RequestHandler);
 
 /**
  * @swagger
@@ -478,7 +553,8 @@ router.post("/transaction", authenticateAdmin as RequestHandler, addTransaction 
  * /api/admin/transactions/{userId}:
  *   get:
  *     tags: [Transaction Management]
- *     summary: Get user transactions
+ *     summary: Get user transactions with pagination
+ *     description: Retrieves a paginated list of all transactions for a specific user
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -488,9 +564,53 @@ router.post("/transaction", authenticateAdmin as RequestHandler, addTransaction 
  *         schema:
  *           type: string
  *           format: uuid
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of transactions per page
  *     responses:
  *       200:
  *         description: User transactions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Transaction'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total number of transactions
+ *                     page:
+ *                       type: integer
+ *                       description: Current page number
+ *                     limit:
+ *                       type: integer
+ *                       description: Number of transactions per page
+ *                     pages:
+ *                       type: integer
+ *                       description: Total number of pages
+ *       400:
+ *         description: Bad request - Invalid parameters
  *       401:
  *         description: Unauthorized
  */
@@ -501,7 +621,8 @@ router.get("/transactions/:userId", authenticateAdmin as RequestHandler, fetchUs
  * /api/admin/transactions/{schemeId}:
  *   get:
  *     tags: [Transaction Management]
- *     summary: Get scheme transactions
+ *     summary: Get scheme transactions with pagination
+ *     description: Retrieves a paginated list of all transactions for a specific scheme
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -511,9 +632,53 @@ router.get("/transactions/:userId", authenticateAdmin as RequestHandler, fetchUs
  *         schema:
  *           type: string
  *           format: uuid
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of transactions per page
  *     responses:
  *       200:
  *         description: Scheme transactions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Transaction'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total number of transactions
+ *                     page:
+ *                       type: integer
+ *                       description: Current page number
+ *                     limit:
+ *                       type: integer
+ *                       description: Number of transactions per page
+ *                     pages:
+ *                       type: integer
+ *                       description: Total number of pages
+ *       400:
+ *         description: Bad request - Invalid parameters
  *       401:
  *         description: Unauthorized
  */

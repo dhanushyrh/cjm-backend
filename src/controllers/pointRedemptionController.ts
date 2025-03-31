@@ -7,6 +7,14 @@ import { AuthRequest } from "../middleware/authMiddleware";
 export const checkEligibility = async (req: AuthRequest, res: Response) => {
   try {
     const { userSchemeId } = req.params;
+    
+    // Validate UUID format
+    if (!userSchemeId || userSchemeId === '{{userSchemeId}}' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userSchemeId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user scheme ID format. Must be a valid UUID."
+      });
+    }
 
     // Verify user owns this scheme
     const userScheme = await UserScheme.findOne({
@@ -36,7 +44,7 @@ export const checkEligibility = async (req: AuthRequest, res: Response) => {
     console.error("Error checking redemption eligibility:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to check redemption eligibility"
+      message: error instanceof Error ? error.message : "Failed to check redemption eligibility"
     });
   }
 };
@@ -47,10 +55,18 @@ export const redeemUserPoints = async (req: AuthRequest, res: Response) => {
     const { userSchemeId } = req.params;
     const { points } = req.body;
 
+    // Validate UUID format
+    if (!userSchemeId || userSchemeId === '{{userSchemeId}}' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userSchemeId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user scheme ID format. Must be a valid UUID."
+      });
+    }
+
     if (!points || points <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid points value"
+        message: "Invalid points value. Must be a positive number."
       });
     }
 

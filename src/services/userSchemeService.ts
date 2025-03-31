@@ -4,49 +4,82 @@ import User from "../models/User";
 import Scheme from "../models/Scheme";
 import { addMonths } from "date-fns";
 import { createInitialDeposit } from "./transactionService";
+import sequelize from "../config/database";
 
 export const createUserScheme = async (
   userId: string,
   schemeId: string,
   transaction?: Transaction
 ): Promise<{ userScheme: UserScheme; initialDeposit: any }> => {
-  // Check if user already has an active scheme
-  const existingScheme = await UserScheme.findOne({
-    where: {
+  // Create a transaction if not provided
+  const t = transaction || await sequelize.transaction();
+  
+  try {
+    // Validate inputs
+    if (!userId || !schemeId) {
+      throw new Error("User ID and Scheme ID are required");
+    }
+    
+    // Check if user exists
+    const user = await User.findByPk(userId, { transaction: t });
+    if (!user) {
+      throw new Error("User not found");
+    }
+  
+    
+    // Get scheme details to calculate end date
+    const scheme = await Scheme.findByPk(schemeId, { transaction: t });
+    if (!scheme) {
+      throw new Error("Invalid scheme ID");
+    }
+
+    const startDate = new Date();
+    const endDate = addMonths(startDate, scheme.duration);
+    
+    // Create new user scheme mapping
+    const userScheme = await UserScheme.create({
       userId,
+      schemeId,
+      startDate,
+      endDate,
+      totalPoints: 0,
+      availablePoints: 0,
       status: "ACTIVE"
-    },
-    transaction
-  });
-
-  if (existingScheme) {
-    throw new Error("User already has an active scheme");
+    }, { transaction: t })
+    .catch(err => {
+      // Provide more specific error messages for validation errors
+      if (err.name === 'SequelizeValidationError') {
+        const validationErrors = err.errors.map((e: any) => e.message).join(', ');
+        throw new Error(`Validation error: ${validationErrors}`);
+      }
+      throw err;
+    });
+    
+    // Create initial deposit transaction
+    const initialDeposit = await createInitialDeposit(userScheme.id, t)
+    .catch(err => {
+      throw new Error(`Failed to create initial deposit: ${err.message}`);
+    });
+    
+    // Commit transaction if we started it
+    if (!transaction) {
+      await t.commit();
+    }
+    
+    return { userScheme, initialDeposit };
+  } catch (error) {
+    // Rollback transaction if we started it
+    if (!transaction) {
+      await t.rollback();
+    }
+    
+    // Rethrow with more context
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error(`Failed to create user scheme: ${error}`);
+    }
   }
-
-  // Get scheme details to calculate end date
-  const scheme = await Scheme.findByPk(schemeId, { transaction });
-  if (!scheme) {
-    throw new Error("Invalid scheme ID");
-  }
-
-  const startDate = new Date();
-  const endDate = addMonths(startDate, scheme.duration);
-
-  // Create new user scheme mapping
-  const userScheme = await UserScheme.create({
-    userId,
-    schemeId,
-    startDate,
-    endDate,
-    totalPoints: 0,
-    availablePoints: 0,
-    status: "ACTIVE"
-  }, { transaction });
-
-  // Create initial deposit transaction
-  const initialDeposit = await createInitialDeposit(userScheme.id, transaction);
-
-  return { userScheme, initialDeposit };
 };
 
 export const getUserSchemes = async (userId: string) => {

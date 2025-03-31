@@ -70,6 +70,16 @@ interface TransactionExportSummary {
   };
 }
 
+export interface PaginationResult<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
 export const createTransaction = async (params: CreateTransactionParams): Promise<Transaction> => {
   const { userSchemeId, transactionType, amount, goldGrams, points, priceRefId, description, transaction } = params;
 
@@ -134,14 +144,60 @@ export const createInitialDeposit = async (
   });
 };
 
-export const getUserTransactions = async (userId: string) => {
-  return await Transaction.findAll({ where: { userId } });
+export const getUserTransactions = async (
+  userId: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<PaginationResult<Transaction>> => {
+  const offset = (page - 1) * limit;
+  
+  const { count, rows } = await Transaction.findAndCountAll({
+    where: { userId },
+    order: [["createdAt", "DESC"]],
+    limit,
+    offset
+  });
+  
+  const pages = Math.ceil(count / limit);
+  
+  return {
+    data: rows,
+    pagination: {
+      total: count,
+      page,
+      limit,
+      pages
+    }
+  };
 };
 
-export const getTransactionsByScheme = async (schemeId: string) => {
-    return await Transaction.findAll({ where: { schemeId } });
-};    
+export const getTransactionsByScheme = async (
+  schemeId: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<PaginationResult<Transaction>> => {
+  const offset = (page - 1) * limit;
   
+  const { count, rows } = await Transaction.findAndCountAll({
+    where: { schemeId },
+    order: [["createdAt", "DESC"]],
+    limit,
+    offset
+  });
+  
+  const pages = Math.ceil(count / limit);
+  
+  return {
+    data: rows,
+    pagination: {
+      total: count,
+      page,
+      limit,
+      pages
+    }
+  };
+};
+
 export const deleteTransaction = async (id: string): Promise<boolean> => {
     const transaction = await Transaction.findByPk(id);
     if (!transaction) return false;

@@ -75,13 +75,10 @@ UserScheme.init(
     sequelize,
     modelName: "UserScheme",
     indexes: [
+      // Non-unique index for better query performance
       {
-        unique: true,
         fields: ["userId", "schemeId", "status"],
-        where: {
-          status: "ACTIVE",
-        },
-        name: "unique_active_user_scheme",
+        name: "user_scheme_status_idx",
       },
     ],
   }

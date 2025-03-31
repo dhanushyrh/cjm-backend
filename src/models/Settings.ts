@@ -5,8 +5,6 @@ class Settings extends Model {
   public id!: string;
   public key!: string;
   public value!: string;
-  public description?: string;
-  public isSystem!: boolean;
   public is_deleted!: boolean;
   
   // Timestamps
@@ -29,15 +27,6 @@ Settings.init(
     value: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    description: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    isSystem: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
     },
     is_deleted: {
       type: DataTypes.BOOLEAN,

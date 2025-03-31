@@ -3,6 +3,8 @@ import Scheme from "./Scheme";
 import UserScheme from "./UserScheme";
 import Transaction from "./Transaction";
 import GoldPrice from "./GoldPrice";
+import RedemptionRequest from "./RedemptionRequest";
+import Admin from "./Admin";
 
 export const setupAssociations = () => {
   // User <-> UserScheme associations
@@ -39,5 +41,25 @@ export const setupAssociations = () => {
   Transaction.belongsTo(GoldPrice, {
     foreignKey: "priceRefId",
     as: "goldPrice"
+  });
+
+  // UserScheme <-> RedemptionRequest associations
+  UserScheme.hasMany(RedemptionRequest, {
+    foreignKey: "userSchemeId",
+    as: "redemptionRequests"
+  });
+  RedemptionRequest.belongsTo(UserScheme, {
+    foreignKey: "userSchemeId",
+    as: "userScheme"
+  });
+
+  // Admin <-> RedemptionRequest associations
+  Admin.hasMany(RedemptionRequest, {
+    foreignKey: "approvedBy",
+    as: "approvedRequests"
+  });
+  RedemptionRequest.belongsTo(Admin, {
+    foreignKey: "approvedBy",
+    as: "admin"
   });
 }; 

@@ -1,5 +1,5 @@
 import express, { RequestHandler } from "express";
-import { authenticateUser } from "../middleware/authMiddleware";
+import { authenticateAdmin, authenticateUser } from "../middleware/authMiddleware";
 import * as userSchemeController from "../controllers/userSchemeController";
 
 const router = express.Router();
@@ -50,7 +50,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/", authenticateUser as RequestHandler, userSchemeController.createUserScheme);
+router.post("/", authenticateAdmin as RequestHandler, userSchemeController.createUserScheme);
 
 /**
  * @swagger
@@ -246,6 +246,68 @@ router.patch("/:userSchemeId/points", authenticateUser as RequestHandler, userSc
  *         description: Unauthorized
  */
 router.get("/expired", authenticateUser as RequestHandler as RequestHandler, userSchemeController.getExpiredSchemes);
+
+/**
+ * @swagger
+ * /api/user-schemes/admin/all:
+ *   get:
+ *     tags: [User Schemes]
+ *     summary: Get all user schemes (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ACTIVE, COMPLETED, WITHDRAWN]
+ *         description: Filter by user scheme status (optional)
+ *     responses:
+ *       200:
+ *         description: List of all user schemes with pagination
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     userSchemes:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserScheme'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         totalPages:
+ *                           type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+router.get("/admin/all", authenticateAdmin as RequestHandler, userSchemeController.getAllUserSchemes);
 
 /**
  * @swagger

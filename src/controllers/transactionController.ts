@@ -118,20 +118,42 @@ export const addTransaction = async (req: Request, res: Response) => {
 export const fetchUserTransactions = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
     if (!userId) {
       return res.status(400).json({ 
+        success: false,
         error: "Missing user ID",
         details: "User ID is required"
       });
     }
+    
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid page value",
+        details: "Page must be greater than 0"
+      });
+    }
+    
+    if (limit < 1 || limit > 100) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid limit value",
+        details: "Limit must be between 1 and 100"
+      });
+    }
 
-    const transactions = await getUserTransactions(userId);
-    const serializedTransactions = serializeTransactions(transactions);
+    const result = await getUserTransactions(userId, page, limit);
+    const serializedTransactions = serializeTransactions(result.data);
 
     res.status(200).json({
-      message: "User transactions fetched successfully",
-      data: serializedTransactions
+      success: true,
+      data: serializedTransactions,
+      pagination: result.pagination
     });
   } catch (error: any) {
     console.error("User Transactions Fetch Error:", {
@@ -140,27 +162,52 @@ export const fetchUserTransactions = async (req: Request, res: Response) => {
       details: error.errors || error
     });
 
-    res.status(500).json({ error: "Failed to fetch user transactions" });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch user transactions" 
+    });
   }
 };
 
 export const fetchSchemeTransactions = async (req: Request, res: Response) => {
   try {
     const { schemeId } = req.params;
-
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
     if (!schemeId) {
       return res.status(400).json({ 
+        success: false,
         error: "Missing scheme ID",
         details: "Scheme ID is required"
       });
     }
+    
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid page value",
+        details: "Page must be greater than 0"
+      });
+    }
+    
+    if (limit < 1 || limit > 100) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid limit value",
+        details: "Limit must be between 1 and 100"
+      });
+    }
 
-    const transactions = await getTransactionsByScheme(schemeId);
-    const serializedTransactions = serializeTransactions(transactions);
+    const result = await getTransactionsByScheme(schemeId, page, limit);
+    const serializedTransactions = serializeTransactions(result.data);
 
     res.status(200).json({
-      message: "Scheme transactions fetched successfully",
-      data: serializedTransactions
+      success: true,
+      data: serializedTransactions,
+      pagination: result.pagination
     });
   } catch (error: any) {
     console.error("Scheme Transactions Fetch Error:", {
@@ -169,7 +216,10 @@ export const fetchSchemeTransactions = async (req: Request, res: Response) => {
       details: error.errors || error
     });
 
-    res.status(500).json({ error: "Failed to fetch scheme transactions" });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch scheme transactions" 
+    });
   }
 };
 

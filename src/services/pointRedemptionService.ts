@@ -25,11 +25,11 @@ export const checkRedemptionEligibility = async (userSchemeId: string): Promise<
       }
     });
 
+    // Use setting value or default to 100 if not found
+    const minimumPoints = minPointsSetting ? parseInt(minPointsSetting.value) : 100;
     if (!minPointsSetting) {
-      throw new Error("Minimum points setting not found");
+      console.warn("minimumRedemptionPoints setting not found, using default value of 100");
     }
-
-    const minimumPoints = parseInt(minPointsSetting.value);
 
     // Get user scheme
     const userScheme = await UserScheme.findByPk(userSchemeId);
