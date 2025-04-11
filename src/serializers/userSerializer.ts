@@ -4,6 +4,7 @@ export interface UserSerializer {
   id: string;
   name: string;
   email: string;
+  is_active: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

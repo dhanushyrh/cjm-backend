@@ -2,8 +2,8 @@ import express, { Router, RequestHandler } from "express";
 import { registerAdmin, loginAdmin, registerUser } from "../controllers/adminAuthController";
 import { authenticateAdmin } from "../middleware/adminAuthMiddleware";
 import { AdminRequest } from "../middleware/adminAuthMiddleware";
-import { fetchUsers } from "../controllers/userController";
-import { assignScheme, removeUser } from "../controllers/userController";
+import { fetchUsers, updateUserStatus } from "../controllers/userController";
+import { removeUser } from "../controllers/userController";
 import { addScheme, fetchSchemes, fetchSchemeById, modifyScheme, removeScheme } from "../controllers/schemeController";
 import { addTransaction, fetchUserTransactions, fetchSchemeTransactions, removeTransaction } from "../controllers/transactionController";
 const router: Router = express.Router();
@@ -120,7 +120,6 @@ router.get("/dashboard", authenticateAdmin as RequestHandler, (req: AdminRequest
  *               - mobile
  *               - address
  *               - dob
- *               - schemeId
  *             properties:
  *               name:
  *                 type: string
@@ -143,6 +142,7 @@ router.get("/dashboard", authenticateAdmin as RequestHandler, (req: AdminRequest
  *               schemeId:
  *                 type: string
  *                 format: uuid
+ *                 description: Optional scheme ID. If not provided, user will be created without a scheme.
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -246,40 +246,6 @@ router.get("/users", authenticateAdmin as RequestHandler, fetchUsers as RequestH
 
 /**
  * @swagger
- * /api/admin/assign-scheme:
- *   post:
- *     tags: [User Management]
- *     summary: Assign scheme to user
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - userId
- *               - schemeId
- *             properties:
- *               userId:
- *                 type: string
- *                 format: uuid
- *               schemeId:
- *                 type: string
- *                 format: uuid
- *     responses:
- *       200:
- *         description: Scheme assigned successfully
- *       400:
- *         description: Invalid input data
- *       401:
- *         description: Unauthorized
- */
-router.post("/assign-scheme", authenticateAdmin as RequestHandler, assignScheme as RequestHandler);
-
-/**
- * @swagger
  * /api/admin/user/{userId}:
  *   delete:
  *     tags: [User Management]
@@ -302,6 +268,49 @@ router.post("/assign-scheme", authenticateAdmin as RequestHandler, assignScheme 
  *         description: User not found
  */
 router.delete("/user/:userId", authenticateAdmin as RequestHandler, removeUser as RequestHandler);
+
+/**
+ * @swagger
+ * /api/admin/users/{userId}/status:
+ *   patch:
+ *     tags: [User Management]
+ *     summary: Update user active status
+ *     description: Activates or deactivates a user by ID
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         required: true
+ *         description: The user's UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *                 description: The new active status for the user
+ *     responses:
+ *       200:
+ *         description: User status updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.patch("/users/:userId/status", authenticateAdmin as RequestHandler, updateUserStatus as RequestHandler);
 
 // Scheme Management
 /**

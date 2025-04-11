@@ -13,7 +13,7 @@ class User extends Model {
   public mobile!: string;
   public dob!: Date;
   public agreeTerms!: boolean;
-  public schemeId?: string;
+  public is_active!: boolean;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -69,10 +69,10 @@ User.init(
       allowNull: true,
       defaultValue: false,
     },
-    schemeId: {
-      type: DataTypes.UUID,
-      allowNull: true,
-      references: { model: "Schemes", key: "id" },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
     },
   },
   {

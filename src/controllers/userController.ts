@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getAllUsers, assignUserToScheme, deleteUser } from "../services/userService";
+import { getAllUsers, deleteUser, updateUserActiveStatus } from "../services/userService";
 import { serializeUser, serializeUsers } from "../serializers/userSerializer";
 import User from "../models/User";
 
@@ -48,52 +48,6 @@ export const fetchUsers = async (req: Request, res: Response) => {
   }
 };
 
-export const assignScheme = async (req: Request, res: Response) => {
-  try {
-    const { userId, schemeId } = req.body;
-
-    // Validate required fields
-    if (!userId || !schemeId) {
-      return res.status(400).json({ 
-        error: "Missing required fields",
-        details: {
-          userId: !userId ? "User ID is required" : undefined,
-          schemeId: !schemeId ? "Scheme ID is required" : undefined
-        }
-      });
-    }
-
-    const updatedUser = await assignUserToScheme(userId, schemeId);
-    if (!updatedUser) {
-      return res.status(404).json({ 
-        error: "User not found",
-        details: "No user found with the provided ID"
-      });
-    }
-
-    const serializedUser = serializeUser(updatedUser);
-    res.status(200).json({
-      message: "Scheme assigned successfully",
-      user: serializedUser
-    });
-  } catch (error: any) {
-    console.error("Scheme Assignment Error:", {
-      message: error.message,
-      stack: error.stack,
-      details: error.errors || error
-    });
-
-    if (error.name === "SequelizeForeignKeyConstraintError") {
-      return res.status(400).json({ 
-        error: "Invalid Scheme ID",
-        details: "The provided scheme does not exist"
-      });
-    }
-
-    res.status(500).json({ error: "Failed to assign scheme" });
-  }
-};
-
 export const removeUser = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -125,5 +79,58 @@ export const removeUser = async (req: Request, res: Response) => {
     });
 
     res.status(500).json({ error: "Failed to delete user" });
+  }
+};
+
+export const updateUserStatus = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { isActive } = req.body;
+
+    // Validate required fields
+    if (userId === undefined) {
+      return res.status(400).json({
+        error: "Missing user ID",
+        details: "User ID is required"
+      });
+    }
+
+    if (isActive === undefined) {
+      return res.status(400).json({
+        error: "Missing isActive status",
+        details: "isActive boolean status is required"
+      });
+    }
+
+    // Validate isActive is boolean
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({
+        error: "Invalid isActive value",
+        details: "isActive must be a boolean value"
+      });
+    }
+
+    const updatedUser = await updateUserActiveStatus(userId, isActive);
+    const serializedUser = serializeUser(updatedUser);
+
+    res.status(200).json({
+      message: `User status ${isActive ? 'activated' : 'deactivated'} successfully`,
+      user: serializedUser
+    });
+  } catch (error: any) {
+    console.error("User Status Update Error:", {
+      message: error.message,
+      stack: error.stack,
+      details: error.errors || error
+    });
+
+    if (error.message === "User not found") {
+      return res.status(404).json({
+        error: "User not found",
+        details: "No user found with the provided ID"
+      });
+    }
+
+    res.status(500).json({ error: "Failed to update user status" });
   }
 };

@@ -48,18 +48,18 @@ export const getAllUsers = async (page: number = 1, limit: number = 10): Promise
   };
 };
 
-export const assignUserToScheme = async (userId: string, schemeId: string) => {
-  const user = await User.findByPk(userId);
-  if (!user) throw new Error("User not found");
-
-  user.schemeId = schemeId;
-  await user.save();
-  return user;
-};
-
 export const deleteUser = async (userId: string) => {
   const user = await User.findByPk(userId);
   if (!user) throw new Error("User not found");
 
   await user.destroy();
+};
+
+export const updateUserActiveStatus = async (userId: string, isActive: boolean) => {
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error("User not found");
+
+  user.is_active = isActive;
+  await user.save();
+  return user;
 };

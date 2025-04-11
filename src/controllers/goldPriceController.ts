@@ -4,6 +4,7 @@ import sequelize from "../config/database";
 import GoldPrice from "../models/GoldPrice";
 import { goldPriceEmitter } from "../events/goldPriceEvents";
 import { getLastNDaysGoldPrices, getPaginatedGoldPrices } from "../services/goldPriceService";
+import { softDeleteBonusTransactions } from "../services/goldPriceBonusService";
 
 // Add or update daily gold price
 export const setGoldPrice = async (req: Request, res: Response) => {
@@ -51,9 +52,13 @@ export const setGoldPrice = async (req: Request, res: Response) => {
         transaction: t
       });
 
-      // If exists, mark it as deleted
+      // If exists, mark it as deleted and handle associated transactions
       if (existingPrice) {
+        // First update the gold price
         await existingPrice.update({ is_deleted: true }, { transaction: t });
+        
+        // Then soft delete all bonus transactions associated with this price
+        // This will be handled separately to ensure user points are adjusted properly
       }
 
       // Create new price entry
@@ -62,15 +67,21 @@ export const setGoldPrice = async (req: Request, res: Response) => {
         pricePerGram
       }, { transaction: t });
 
-      return newPrice;
+      return { newPrice, existingPriceId: existingPrice?.id };
     });
 
+    // Process bonus transactions outside the transaction to avoid deadlocks
+    if (result.existingPriceId) {
+      await softDeleteBonusTransactions(result.existingPriceId);
+    }
+
     // Emit event for price analysis
-    goldPriceEmitter.emit("goldPriceSet", result);
+    goldPriceEmitter.emit("goldPriceSet", result.newPrice);
 
     res.status(200).json({
       message: "Gold price set successfully!",
-      goldPrice: result
+      goldPrice: result.newPrice,
+      transactionsUpdated: result.existingPriceId ? true : false
     });
   } catch (error: any) {
     console.error("Gold Price Set Error:", {

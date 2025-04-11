@@ -395,7 +395,7 @@ export const exportTransactions = async (req: Request, res: Response) => {
     );
 
     // Calculate summary
-    const summary = calculateExportSummary(transactions);
+    const summary = await calculateExportSummary(transactions);
 
     // Generate CSV header
     const csvHeader = [
@@ -434,21 +434,28 @@ export const exportTransactions = async (req: Request, res: Response) => {
       `Points Transactions,${summary.transactionCounts.points}`,
       `Total Amount,${summary.totalAmount}`,
       `Total Gold Grams,${summary.totalGoldGrams}`,
-      `Total Points,${summary.totalPoints}`,
+      `Total Points,${summary.totalPoints}`
+    ];
+  
+    
+    summaryRows.push(
       "", // Empty row for spacing
       "SCHEME-WISE SUMMARY"
-    ];
+    );
 
     // Add scheme-wise summaries
     Object.entries(summary.schemeWiseSummary).forEach(([schemeId, schemeSummary]) => {
-      summaryRows.push(
+      const schemeRows = [
         `Scheme: ${schemeSummary.schemeName}`,
         `Total Transactions,${schemeSummary.transactionCount}`,
         `Total Amount,${schemeSummary.totalAmount}`,
         `Total Gold Grams,${schemeSummary.totalGoldGrams}`,
-        `Total Points,${schemeSummary.totalPoints}`,
-        "" // Empty row for spacing
-      );
+        `Total Points,${schemeSummary.totalPoints}`
+      ];
+      
+      
+      schemeRows.push(""); // Empty row for spacing
+      summaryRows.push(...schemeRows);
     });
 
     // Combine all rows

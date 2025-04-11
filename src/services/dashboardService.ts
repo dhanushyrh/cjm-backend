@@ -91,7 +91,11 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
   };
 
   // Get transaction statistics
-  const transactions = await Transaction.findAll();
+  const transactions = await Transaction.findAll({
+    where: {
+      is_deleted: false // Only include non-deleted transactions
+    }
+  });
   const totalTransactions = transactions.length;
   
   // Initialize values
@@ -138,31 +142,42 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 
   // Get current gold price
   const latestGoldPrice = await GoldPrice.findOne({
+    where: {
+      is_deleted: false
+    },
     order: [['date', 'DESC']]
   });
 
   // Get redemption statistics
-  const totalRequests = await RedemptionRequest.count();
+  const totalRequests = await RedemptionRequest.count({
+    where: {
+      is_deleted: false
+    }
+  });
   const pendingRequests = await RedemptionRequest.count({
     where: {
-      status: "PENDING"
+      status: "PENDING",
+      is_deleted: false
     }
   });
   const approvedRequests = await RedemptionRequest.count({
     where: {
-      status: "APPROVED"
+      status: "APPROVED",
+      is_deleted: false
     }
   });
   const rejectedRequests = await RedemptionRequest.count({
     where: {
-      status: "REJECTED"
+      status: "REJECTED",
+      is_deleted: false
     }
   });
 
   // Calculate total points redeemed from approved requests
   const approvedRedemptions = await RedemptionRequest.findAll({
     where: {
-      status: "APPROVED"
+      status: "APPROVED",
+      is_deleted: false
     }
   });
   const totalPointsRedeemed = approvedRedemptions.reduce(

@@ -200,9 +200,10 @@ export const getTransactionsByScheme = async (
 
 export const deleteTransaction = async (id: string): Promise<boolean> => {
     const transaction = await Transaction.findByPk(id);
-    if (!transaction) return false;
+    if (!transaction || transaction.is_deleted) return false;
 
-    await transaction.destroy();
+    // Soft delete the transaction by marking is_deleted as true
+    await transaction.update({ is_deleted: true });
     return true;
 };
 
@@ -212,7 +213,11 @@ export const getUserSchemeTransactions = async (
   limit: number = 10,
   type?: TransactionType
 ): Promise<{ transactions: Transaction[]; total: number }> => {
-  const where: any = { userSchemeId };
+  const where: any = { 
+    userSchemeId,
+    is_deleted: false // Only include non-deleted transactions
+  };
+  
   if (type) {
     where.transactionType = type;
   }
@@ -242,7 +247,10 @@ export const getUserSchemeTransactions = async (
 
 export const getUserSchemeTransactionSummary = async (userSchemeId: string): Promise<TransactionSummary> => {
   const transactions = await Transaction.findAll({
-    where: { userSchemeId },
+    where: { 
+      userSchemeId,
+      is_deleted: false // Only include non-deleted transactions
+    },
     order: [["createdAt", "DESC"]]
   });
 
@@ -300,6 +308,9 @@ export const getUserAllSchemesTransactions = async (
   const offset = (page - 1) * limit;
 
   const { count, rows } = await Transaction.findAndCountAll({
+    where: {
+      is_deleted: false // Only include non-deleted transactions
+    },
     include: [{
       model: UserScheme,
       as: "userScheme",
@@ -325,6 +336,9 @@ export const getUserAllSchemesTransactionSummary = async (userId: string): Promi
   schemeWiseSummary: { [key: string]: TransactionSummary };
 }> => {
   const transactions = await Transaction.findAll({
+    where: {
+      is_deleted: false // Only include non-deleted transactions
+    },
     include: [{
       model: UserScheme,
       as: "userScheme",
@@ -403,7 +417,10 @@ export const getUserAllSchemesTransactionSummary = async (userId: string): Promi
     };
   }
 
-  return { overallSummary, schemeWiseSummary };
+  return {
+    overallSummary,
+    schemeWiseSummary
+  };
 };
 
 export const formatTransactionsForExport = async (
@@ -462,38 +479,45 @@ export const getExportableTransactions = async (
   return formatTransactionsForExport(transactions);
 };
 
-export const calculateExportSummary = (transactions: ExportableTransaction[]): TransactionExportSummary => {
-  const summary: TransactionExportSummary = {
-    totalAmount: 0,
-    totalGoldGrams: 0,
-    totalPoints: 0,
-    transactionCounts: {
-      deposits: 0,
-      withdrawals: 0,
-      points: 0,
-      total: transactions.length
-    },
-    schemeWiseSummary: {}
+export const calculateExportSummary = async (transactions: ExportableTransaction[]): Promise<TransactionExportSummary> => {
+  // Calculate overall totals
+  let totalAmount = 0;
+  let totalGoldGrams = 0;
+  let totalPoints = 0;
+  
+  // Track transaction counts
+  const transactionCounts = {
+    deposits: 0,
+    withdrawals: 0,
+    points: 0,
+    total: transactions.length
   };
-
-  for (const t of transactions) {
-    // Update overall totals
-    if (t.type === 'deposit') {
-      summary.totalAmount += t.amount;
-      summary.totalGoldGrams += t.goldGrams;
-      summary.transactionCounts.deposits++;
-    } else if (t.type === 'withdrawal') {
-      summary.totalAmount -= t.amount;
-      summary.totalGoldGrams -= t.goldGrams;
-      summary.transactionCounts.withdrawals++;
-    } else if (t.type === 'points') {
-      summary.totalPoints += t.points;
-      summary.transactionCounts.points++;
+  
+  // Initialize scheme-wise summary
+  const schemeWiseSummary: TransactionExportSummary["schemeWiseSummary"] = {};
+  
+  // Process each transaction
+  transactions.forEach(t => {
+    // Update transaction type counts
+    if (t.type === "deposit") {
+      transactionCounts.deposits++;
+      totalAmount += t.amount;
+      totalGoldGrams += t.goldGrams;
+    } else if (t.type === "withdrawal") {
+      transactionCounts.withdrawals++;
+      totalAmount -= t.amount;
+      totalGoldGrams -= t.goldGrams;
+    } else if (t.type === "points") {
+      transactionCounts.points++;
     }
-
-    // Update scheme-wise summary
-    if (!summary.schemeWiseSummary[t.userSchemeId]) {
-      summary.schemeWiseSummary[t.userSchemeId] = {
+    
+    // Add points for all transaction types
+    totalPoints += t.points;
+    
+    // Initialize or update scheme summary
+    const schemeKey = `${t.schemeName}_${t.userSchemeId}`;
+    if (!schemeWiseSummary[schemeKey]) {
+      schemeWiseSummary[schemeKey] = {
         schemeName: t.schemeName,
         totalAmount: 0,
         totalGoldGrams: 0,
@@ -501,18 +525,24 @@ export const calculateExportSummary = (transactions: ExportableTransaction[]): T
         transactionCount: 0
       };
     }
-
-    const schemeSummary = summary.schemeWiseSummary[t.userSchemeId];
-    if (t.type === 'deposit') {
+    
+    // Update scheme summary
+    const schemeSummary = schemeWiseSummary[schemeKey];
+    schemeSummary.transactionCount++;
+    if (t.type === "deposit") {
       schemeSummary.totalAmount += t.amount;
       schemeSummary.totalGoldGrams += t.goldGrams;
-    } else if (t.type === 'withdrawal') {
+    } else if (t.type === "withdrawal") {
       schemeSummary.totalAmount -= t.amount;
       schemeSummary.totalGoldGrams -= t.goldGrams;
     }
     schemeSummary.totalPoints += t.points;
-    schemeSummary.transactionCount++;
-  }
-
-  return summary;
+  });
+  return {
+    totalAmount,
+    totalGoldGrams,
+    totalPoints,
+    transactionCounts,
+    schemeWiseSummary
+  };
 };

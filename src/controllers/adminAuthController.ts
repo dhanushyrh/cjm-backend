@@ -8,6 +8,7 @@ import { hashPassword } from "../services/authService";
 import { serializeAdmin } from "../serializers/adminSerializer";
 import { serializeUser } from "../serializers/userSerializer";
 import { createUserScheme } from "../services/userSchemeService";
+import { sendWelcomeEmail } from "../services/emailService";
 
 // Register a new admin
 export const registerAdmin = async (req: Request, res: Response) => {
@@ -86,7 +87,7 @@ export const registerUser = async (req: Request, res: Response) => {
     const { name, email, password, nominee, relation, mobile, address, dob, schemeId } = req.body;
 
     // Validate required fields
-    if (!name || !email || !password || !nominee || !relation || !mobile || !address || !dob || !schemeId) {
+    if (!name || !email || !password || !nominee || !relation || !mobile || !address || !dob) {
       return res.status(400).json({ 
         error: "Missing required fields",
         details: {
@@ -97,8 +98,7 @@ export const registerUser = async (req: Request, res: Response) => {
           relation: !relation ? "Relation is required" : undefined,
           mobile: !mobile ? "Mobile number is required" : undefined,
           address: !address ? "Address is required" : undefined,
-          dob: !dob ? "Date of birth is required" : undefined,
-          schemeId: !schemeId ? "Scheme ID is required" : undefined
+          dob: !dob ? "Date of birth is required" : undefined
         }
       });
     }
@@ -128,23 +128,50 @@ export const registerUser = async (req: Request, res: Response) => {
         relation, 
         address, 
         mobile, 
-        dob: parsedDob,
-        schemeId 
+        dob: parsedDob
       }, { transaction: t });
 
-      // Create user-scheme mapping and initial deposit
-      const { userScheme, initialDeposit } = await createUserScheme(user.id, schemeId, t);
+      // Create user-scheme mapping and initial deposit only if schemeId is provided
+      let userScheme = null;
+      let initialDeposit = null;
+      let bonusPoints = 0;
+      
+      if (schemeId) {
+        try {
+          const schemeResult = await createUserScheme(user.id, schemeId, t);
+          userScheme = schemeResult.userScheme;
+          initialDeposit = schemeResult.initialDeposit;
+          bonusPoints = schemeResult.bonusPoints || 0;
+        } catch (schemeError) {
+          console.error("Error creating user scheme:", schemeError);
+          // Continue with user creation even if scheme mapping fails
+        }
+      }
 
-      return { user, userScheme, initialDeposit };
+      return { user, userScheme, initialDeposit, bonusPoints };
     });
 
     const serializedUser = serializeUser(result.user);
 
+    // Send welcome email
+    try {
+      await sendWelcomeEmail(email, name);
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
+      // Don't fail the registration if email fails
+    }
+
     res.status(201).json({
-      message: "User registered successfully!",
+      success: true,
+      message: schemeId 
+        ? (result.bonusPoints && result.bonusPoints > 0 
+            ? `User registered successfully with ${result.bonusPoints} bonus points!`
+            : "User registered successfully with scheme!")
+        : "User registered successfully!",
       user: serializedUser,
-      scheme: result.userScheme,
-      initialDeposit: result.initialDeposit
+      scheme: result.userScheme || null,
+      initialDeposit: result.initialDeposit || null,
+      bonusPoints: result.bonusPoints || 0
     });
   } catch (error: any) {
     console.error("User Registration Error:", {
@@ -157,13 +184,6 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ 
         error: "Validation Error", 
         details: error.errors.map((err: any) => err.message)
-      });
-    }
-
-    if (error.name === "SequelizeForeignKeyConstraintError") {
-      return res.status(400).json({ 
-        error: "Invalid Scheme ID",
-        details: "The provided scheme does not exist"
       });
     }
     

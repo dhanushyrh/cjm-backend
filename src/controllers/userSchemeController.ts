@@ -11,20 +11,36 @@ export const createUserScheme = async (req: Request, res: Response): Promise<voi
   try {
     const { userId, schemeId } = req.body;
     
-    if (!userId || !schemeId) {
+    if (!userId) {
       res.status(400).json({
         success: false,
-        message: "User ID and Scheme ID are required"
+        message: "User ID is required"
+      });
+      return;
+    }
+    
+    // Skip scheme creation if schemeId is not provided
+    if (!schemeId) {
+      res.status(201).json({
+        success: true,
+        message: "User scheme creation skipped - no scheme selected",
+        data: null
       });
       return;
     }
     
     const result = await userSchemeService.createUserScheme(userId, schemeId);
     
-    res.status(201).json({
+    // Prepare response with bonus points information
+    const response = {
       success: true,
-      data: result
-    });
+      data: result,
+      message: result.bonusPoints && result.bonusPoints > 0 
+        ? `User scheme created successfully with ${result.bonusPoints} bonus points` 
+        : "User scheme created successfully"
+    };
+    
+    res.status(201).json(response);
   } catch (error) {
     console.error("Error creating user scheme:", error);
     res.status(400).json({

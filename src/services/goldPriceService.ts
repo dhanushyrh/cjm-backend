@@ -1,6 +1,12 @@
 import { Op } from "sequelize";
 import { subDays, format, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
+import sequelize from "../config/database";
 import GoldPrice from "../models/GoldPrice";
+import Transaction from "../models/Transaction";
+import UserScheme from "../models/UserScheme";
+import Scheme from "../models/Scheme";
+import { calculatePoints } from "../utils/pointCalculator";
+
 
 export interface GoldPriceGraphData {
   date: string;
@@ -274,4 +280,120 @@ export const getPaginatedGoldPrices = async (
       pages
     }
   };
+};
+
+export const updateGoldPrice = async (id: number, price: number): Promise<GoldPrice> => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    // Find the existing price
+    const existingPrice = await GoldPrice.findByPk(id);
+    if (!existingPrice) {
+      throw new Error("Gold price not found");
+    }
+
+    // Check if there's another price for the same date
+    const sameDatePrice = await GoldPrice.findOne({
+      where: {
+        date: existingPrice.date,
+        id: { [Op.ne]: id }
+      }
+    });
+
+    if (sameDatePrice) {
+      // Mark the old price as deleted
+      await sameDatePrice.update({ is_deleted: true }, { transaction });
+      
+      // Mark all transactions associated with the old price as deleted
+      await Transaction.update(
+        { is_deleted: true },
+        {
+          where: {
+            priceRefId: sameDatePrice.id,
+            is_deleted: false
+          },
+          transaction
+        }
+      );
+    }
+
+    // Update the current price
+    const updatedPrice = await existingPrice.update(
+      { pricePerGram: price, is_deleted: false },
+      { transaction }
+    );
+
+    // Find all transactions using this price
+    const affectedTransactions = await Transaction.findAll({
+      where: {
+        priceRefId: id,
+        is_deleted: false
+      },
+      include: [{
+        model: UserScheme,
+        as: 'userScheme',
+        required: true,
+        include: [{
+          model: Scheme,
+          as: 'scheme',
+          required: true
+        }]
+      }]
+    });
+
+    // Mark old transactions as deleted
+    await Transaction.update(
+      { is_deleted: true },
+      {
+        where: {
+          priceRefId: id,
+          is_deleted: false
+        },
+        transaction
+      }
+    );
+    
+    // Track point adjustments for each user scheme
+    const pointAdjustments = new Map<string, number>();
+
+    // Create new transactions with updated points
+    for (const oldTransaction of affectedTransactions) {
+      const userScheme = oldTransaction.userScheme!;
+      const newPoints = calculatePoints(oldTransaction.amount, price, userScheme.scheme!.goldGrams);
+      const pointDifference = newPoints - oldTransaction.points;
+      
+      // Track point adjustments
+      const currentAdjustment = pointAdjustments.get(userScheme.id) || 0;
+      pointAdjustments.set(userScheme.id, currentAdjustment + pointDifference);
+      
+      await Transaction.create({
+        userSchemeId: oldTransaction.userSchemeId,
+        transactionType: oldTransaction.transactionType,
+        amount: oldTransaction.amount,
+        goldGrams: oldTransaction.goldGrams,
+        points: newPoints,
+        priceRefId: id,
+        redeemReqId: oldTransaction.redeemReqId,
+        description: oldTransaction.description,
+        is_deleted: false
+      }, { transaction });
+    }
+    
+    // Update UserScheme point balances
+    for (const [userSchemeId, pointDifference] of pointAdjustments.entries()) {
+      const userScheme = await UserScheme.findByPk(userSchemeId, { transaction });
+      if (userScheme) {
+        await userScheme.update({
+          totalPoints: userScheme.totalPoints + pointDifference,
+          availablePoints: userScheme.availablePoints + pointDifference
+        }, { transaction });
+      }
+    }
+
+    await transaction.commit();
+    return updatedPrice;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }; 
