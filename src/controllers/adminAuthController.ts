@@ -155,7 +155,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     // Send welcome email
     try {
-      await sendWelcomeEmail(email, name);
+      // await sendWelcomeEmail(email, name);
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
       // Don't fail the registration if email fails
