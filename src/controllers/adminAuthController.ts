@@ -9,6 +9,7 @@ import { serializeAdmin } from "../serializers/adminSerializer";
 import { serializeUser } from "../serializers/userSerializer";
 import { createUserScheme } from "../services/userSchemeService";
 import { sendWelcomeEmail } from "../services/emailService";
+import { generateUniqueUserId } from "../utils/idGenerator";
 
 // Register a new admin
 export const registerAdmin = async (req: Request, res: Response) => {
@@ -84,10 +85,31 @@ export const loginAdmin = async (req: Request, res: Response) => {
 // Register a new user (admin only)
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, nominee, relation, mobile, address, dob, schemeId } = req.body;
+    const { 
+      name, 
+      email, 
+      password, 
+      nominee, 
+      relation, 
+      mobile, 
+      current_address, 
+      permanent_address, 
+      dob, 
+      schemeId, 
+      receive_posts,
+      profile_image,
+      id_proof,
+      referred_by,
+      desired_item,
+      payment_mode,
+      payment_details,
+      supporting_document_url,
+      amount,
+      payment_date
+    } = req.body;
 
     // Validate required fields
-    if (!name || !email || !password || !nominee || !relation || !mobile || !address || !dob) {
+    if (!name || !email || !password || !nominee || !relation || !mobile || !current_address || !permanent_address || !dob) {
       return res.status(400).json({ 
         error: "Missing required fields",
         details: {
@@ -97,7 +119,8 @@ export const registerUser = async (req: Request, res: Response) => {
           nominee: !nominee ? "Nominee is required" : undefined,
           relation: !relation ? "Relation is required" : undefined,
           mobile: !mobile ? "Mobile number is required" : undefined,
-          address: !address ? "Address is required" : undefined,
+          current_address: !current_address ? "Current address is required" : undefined,
+          permanent_address: !permanent_address ? "Permanent address is required" : undefined,
           dob: !dob ? "Date of birth is required" : undefined
         }
       });
@@ -117,6 +140,23 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid date format. Please provide date in YYYY-MM-DD format" });
     }
 
+    // Check if the referred_by user exists if provided
+    let referrerId = null;
+    if (referred_by) {
+      const referrerUser = await User.findOne({ where: { userId: referred_by } });
+      if (!referrerUser) {
+        return res.status(400).json({ 
+          error: "Invalid referrer",
+          details: "The referred_by user does not exist"
+        });
+      }
+      // Store the actual UUID of the referrer to match database schema
+      referrerId = referrerUser.id;
+    }
+
+    // Generate a unique userId in the format HS-XXXXXX
+    const uniqueUserId = await generateUniqueUserId(User);
+
     // Start a transaction to ensure both user and scheme mapping are created
     const result = await sequelize.transaction(async (t: Transaction) => {
       // Create user
@@ -126,29 +166,43 @@ export const registerUser = async (req: Request, res: Response) => {
         password: hashedPassword, 
         nominee, 
         relation, 
-        address, 
+        current_address, 
+        permanent_address, 
         mobile, 
-        dob: parsedDob
+        dob: parsedDob,
+        receive_posts: receive_posts || false,
+        profile_image: profile_image || null,
+        id_proof: id_proof || null,
+        userId: uniqueUserId,
+        referred_by: referrerId
       }, { transaction: t });
 
       // Create user-scheme mapping and initial deposit only if schemeId is provided
       let userScheme = null;
       let initialDeposit = null;
       let bonusPoints = 0;
+      let paymentDetails = null;
       
       if (schemeId) {
         try {
-          const schemeResult = await createUserScheme(user.id, schemeId, t);
+          const schemeResult = await createUserScheme(user.id, schemeId, t, desired_item, payment_mode && payment_details && amount && payment_date ? {
+            payment_mode,
+            payment_details,
+            supporting_document_url: supporting_document_url || null,
+            amount: parseFloat(amount),
+            payment_date: new Date(payment_date)
+          } : undefined);
           userScheme = schemeResult.userScheme;
           initialDeposit = schemeResult.initialDeposit;
           bonusPoints = schemeResult.bonusPoints || 0;
+          paymentDetails = schemeResult.paymentDetails;
         } catch (schemeError) {
           console.error("Error creating user scheme:", schemeError);
           // Continue with user creation even if scheme mapping fails
         }
       }
 
-      return { user, userScheme, initialDeposit, bonusPoints };
+      return { user, userScheme, initialDeposit, bonusPoints, paymentDetails };
     });
 
     const serializedUser = serializeUser(result.user);
@@ -171,7 +225,8 @@ export const registerUser = async (req: Request, res: Response) => {
       user: serializedUser,
       scheme: result.userScheme || null,
       initialDeposit: result.initialDeposit || null,
-      bonusPoints: result.bonusPoints || 0
+      bonusPoints: result.bonusPoints || 0,
+      paymentDetails: result.paymentDetails || null
     });
   } catch (error: any) {
     console.error("User Registration Error:", {
@@ -188,5 +243,97 @@ export const registerUser = async (req: Request, res: Response) => {
     }
     
     res.status(500).json({ error: "Failed to register user" });
+  }
+};
+
+// Rename the function to createAdminUserScheme
+export const createAdminUserScheme = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { 
+      userId, 
+      schemeId, 
+      startDate,
+      endDate,
+      initialPoints,
+      status,
+      desired_item,
+      payment_details
+    } = req.body;
+    
+    // Validate required fields
+    if (!userId || !schemeId) {
+      res.status(400).json({ 
+        success: false,
+        message: "Failed to create user scheme",
+        error: "User ID and Scheme ID are required"
+      });
+      return;
+    }
+
+    // Start a transaction to ensure data consistency
+    const result = await sequelize.transaction(async (t: Transaction) => {
+      // Create user scheme with the imported service function
+      const schemeResult = await createUserScheme(
+        userId, 
+        schemeId, 
+        t, 
+        desired_item,
+        payment_details ? {
+          payment_mode: payment_details.payment_mode,
+          payment_details: payment_details.payment_details,
+          supporting_document_url: payment_details.supporting_document_url || undefined,
+          amount: parseFloat(payment_details.amount),
+          payment_date: new Date(payment_details.payment_date)
+        } : undefined,
+        {
+          startDate: startDate ? new Date(startDate) : undefined,
+          endDate: endDate ? new Date(endDate) : undefined,
+          initialPoints: initialPoints || undefined,
+          status: status || undefined,
+          // Initial deposit will be calculated automatically from scheme details
+        }
+      );
+
+      return {
+        userScheme: schemeResult.userScheme,
+        initialDeposit: schemeResult.initialDeposit,
+        paymentDetails: schemeResult.paymentDetails,
+        bonusPoints: schemeResult.bonusPoints
+      };
+    });
+
+    res.status(201).json({
+      success: true,
+      message: result.bonusPoints && result.bonusPoints > 0 
+        ? `User scheme created successfully with ${result.bonusPoints} bonus points` 
+        : "User scheme created successfully",
+      data: {
+        userScheme: result.userScheme,
+        initialDeposit: result.initialDeposit,
+        paymentDetails: result.paymentDetails
+      }
+    });
+  } catch (error: any) {
+    console.error("User Scheme Creation Error:", {
+      message: error.message,
+      stack: error.stack,
+      details: error.errors || error
+    });
+
+    if (error.name === "SequelizeValidationError") {
+      res.status(400).json({ 
+        success: false,
+        message: "Failed to create user scheme",
+        error: "Validation Error", 
+        details: error.errors.map((err: any) => err.message)
+      });
+      return;
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to create user scheme",
+      error: error.message
+    });
   }
 };

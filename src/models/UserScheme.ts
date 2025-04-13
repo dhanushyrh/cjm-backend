@@ -2,6 +2,7 @@ import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
 import User from "./User";
 import Scheme from "./Scheme";
+import PaymentDetails from "./PaymentDetails";
 
 export type UserSchemeStatus = "ACTIVE" | "COMPLETED" | "WITHDRAWN";
 
@@ -14,6 +15,9 @@ class UserScheme extends Model {
   public totalPoints!: number;
   public availablePoints!: number;
   public status!: UserSchemeStatus;
+  public desired_item?: string;
+  public payment_details_id?: string;
+  public certificate_delivered!: boolean;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -22,6 +26,7 @@ class UserScheme extends Model {
   // Associations
   public readonly user?: User;
   public readonly scheme?: Scheme;
+  public readonly paymentDetails?: PaymentDetails;
 }
 
 UserScheme.init(
@@ -69,6 +74,23 @@ UserScheme.init(
       type: DataTypes.ENUM("ACTIVE", "COMPLETED", "WITHDRAWN"),
       allowNull: false,
       defaultValue: "ACTIVE",
+    },
+    desired_item: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    payment_details_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: "PaymentDetails",
+        key: "id",
+      },
+    },
+    certificate_delivered: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     }
   },
   {

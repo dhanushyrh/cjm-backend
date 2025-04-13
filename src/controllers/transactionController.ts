@@ -1,15 +1,11 @@
 import { Request, Response } from "express";
-import { createTransaction, getUserTransactions, getTransactionsByScheme, deleteTransaction, getExportableTransactions, calculateExportSummary } from "../services/transactionService";
-import { serializeTransaction, serializeTransactions } from "../serializers/transactionSerializer";
-import {
-  getUserSchemeTransactions,
-  getUserSchemeTransactionSummary,
-  getUserAllSchemesTransactions,
-  getUserAllSchemesTransactionSummary
-} from "../services/transactionService";
-import { TransactionType } from "../models/Transaction";
+import Transaction, { TransactionType } from "../models/Transaction";
 import UserScheme from "../models/UserScheme";
+import { createTransaction, getUserTransactions, getTransactionsByScheme, deleteTransaction, getExportableTransactions, calculateExportSummary, getUserSchemeTransactions, getUserSchemeTransactionSummary, getUserAllSchemesTransactions, getUserAllSchemesTransactionSummary } from "../services/transactionService";
+import { serializeTransaction, serializeTransactions } from "../serializers/transactionSerializer";
 import GoldPrice from "../models/GoldPrice";
+import User from "../models/User";
+import Scheme from "../models/Scheme";
 
 // Add type declaration
 declare module 'express' {
@@ -291,6 +287,23 @@ export const getSchemeTransactions = async (req: Request, res: Response) => {
 export const getSchemeTransactionSummary = async (req: Request, res: Response) => {
   try {
     const { userSchemeId } = req.params;
+    
+    if (!userSchemeId) {
+      return res.status(400).json({ 
+        error: "Missing parameter", 
+        details: "userSchemeId is required"
+      });
+    }
+    
+    // Validate the userSchemeId exists
+    const userScheme = await UserScheme.findByPk(userSchemeId);
+    if (!userScheme) {
+      return res.status(404).json({
+        error: "Not found",
+        details: "User scheme not found with the provided ID"
+      });
+    }
+    
     const summary = await getUserSchemeTransactionSummary(userSchemeId);
 
     res.status(200).json({
@@ -480,5 +493,96 @@ export const exportTransactions = async (req: Request, res: Response) => {
       details: error.errors || error
     });
     res.status(500).json({ error: "Failed to export transactions" });
+  }
+};
+
+// Add the new controller function for fetching transactions by userSchemeId
+export const fetchUserSchemeTransactions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userSchemeId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const transactionType = req.query.transactionType as TransactionType | undefined;
+    const offset = (page - 1) * limit;
+
+    // Validate the userSchemeId
+    const userScheme = await UserScheme.findByPk(userSchemeId);
+    if (!userScheme) {
+      res.status(404).json({
+        success: false,
+        message: "User scheme not found"
+      });
+      return;
+    }
+
+    // Prepare where clause
+    const whereClause: any = {
+      userSchemeId,
+      is_deleted: false
+    };
+
+    // Add transactionType filter if provided
+    if (transactionType) {
+      // Validate that the transaction type is valid
+      const validTypes: TransactionType[] = ['deposit', 'withdrawal', 'points', 'bonus_withdrawal'];
+      if (!validTypes.includes(transactionType)) {
+        res.status(400).json({
+          success: false,
+          message: `Invalid transaction type. Valid types are: ${validTypes.join(', ')}`
+        });
+        return;
+      }
+      whereClause.transactionType = transactionType;
+    }
+
+    // Fetch transactions with pagination and filters
+    const { count, rows } = await Transaction.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: UserScheme,
+          as: "userScheme",
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["id", "name"]
+            },
+            {
+              model: Scheme,
+              as: "scheme",
+              attributes: ["id", "name"]
+            }
+          ]
+        }
+      ],
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset
+    });
+
+    // Calculate total pages
+    const totalPages = Math.ceil(count / limit);
+
+    res.status(200).json({
+      success: true,
+      data: rows,
+      pagination: {
+        total: count,
+        page,
+        limit,
+        pages: totalPages
+      },
+      filters: {
+        transactionType: transactionType || 'all'
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching user scheme transactions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch transactions",
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 };

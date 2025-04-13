@@ -174,4 +174,46 @@ export const removeSetting = async (req: Request, res: Response) => {
 
     res.status(500).json({ error: "Failed to delete setting" });
   }
+};
+
+// Add a new controller method to get a setting by key
+export const fetchSettingByKey = async (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+
+    if (!key) {
+      return res.status(400).json({ 
+        error: "Missing setting key",
+        details: "Setting key is required"
+      });
+    }
+
+    const settingValue = await getSetting(key);
+    
+    if (settingValue === undefined) {
+      return res.status(404).json({ 
+        error: "Setting not found",
+        details: `No setting found with key: ${key}`
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        key,
+        value: settingValue
+      }
+    });
+  } catch (error: any) {
+    console.error("Setting Fetch By Key Error:", {
+      message: error.message,
+      stack: error.stack,
+      details: error.errors || error
+    });
+
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch setting" 
+    });
+  }
 }; 

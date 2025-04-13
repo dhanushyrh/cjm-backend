@@ -12,6 +12,9 @@ import { AuthRequest } from "../middleware/authMiddleware";
  *         id:
  *           type: string
  *           format: uuid
+ *         userId:
+ *           type: string
+ *           description: Unique user identifier in format HS-XXXXXX
  *         name:
  *           type: string
  *         email:
@@ -19,7 +22,9 @@ import { AuthRequest } from "../middleware/authMiddleware";
  *           format: email
  *         mobile:
  *           type: string
- *         address:
+ *         current_address:
+ *           type: string
+ *         permanent_address:
  *           type: string
  *         dob:
  *           type: string
@@ -28,6 +33,26 @@ import { AuthRequest } from "../middleware/authMiddleware";
  *           type: string
  *         relation:
  *           type: string
+ *         receive_posts:
+ *           type: boolean
+ *         profile_image:
+ *           type: string
+ *         id_proof:
+ *           type: string
+ *         referred_by:
+ *           type: string
+ *           format: uuid
+ *           description: UUID of the user who referred this user
+ *         referrer:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: string
+ *               format: uuid
+ *             userId:
+ *               type: string
+ *             name:
+ *               type: string
  *         createdAt:
  *           type: string
  *           format: date-time

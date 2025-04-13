@@ -28,6 +28,9 @@ const router = express.Router();
  *               schemeId:
  *                 type: string
  *                 format: uuid
+ *               desired_item:
+ *                 type: string
+ *                 description: The specific gold item the user wants to purchase
  *     responses:
  *       201:
  *         description: User scheme created successfully
@@ -311,6 +314,55 @@ router.get("/admin/all", authenticateAdmin as RequestHandler, userSchemeControll
 
 /**
  * @swagger
+ * /api/user-schemes/{userSchemeId}/desired-item:
+ *   patch:
+ *     tags: [User Schemes]
+ *     summary: Update desired item for a user scheme
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userSchemeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               desired_item:
+ *                 type: string
+ *                 description: The specific gold item the user wants to purchase
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Desired item updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/UserScheme'
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User scheme not found
+ */
+router.patch("/:userSchemeId/desired-item", authenticateUser as RequestHandler, userSchemeController.updateUserSchemeDesiredItem);
+
+/**
+ * @swagger
  * components:
  *   schemas:
  *     UserScheme:
@@ -338,6 +390,9 @@ router.get("/admin/all", authenticateAdmin as RequestHandler, userSchemeControll
  *         status:
  *           type: string
  *           enum: [ACTIVE, COMPLETED, WITHDRAWN]
+ *         desired_item:
+ *           type: string
+ *           description: The specific gold item the user wants to purchase
  *         createdAt:
  *           type: string
  *           format: date-time

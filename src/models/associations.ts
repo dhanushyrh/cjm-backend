@@ -5,6 +5,7 @@ import Transaction from "./Transaction";
 import GoldPrice from "./GoldPrice";
 import RedemptionRequest from "./RedemptionRequest";
 import Admin from "./Admin";
+import PaymentDetails from "./PaymentDetails";
 
 export const setupAssociations = () => {
   // User <-> UserScheme associations
@@ -61,5 +62,15 @@ export const setupAssociations = () => {
   RedemptionRequest.belongsTo(Admin, {
     foreignKey: "approvedBy",
     as: "admin"
+  });
+
+  // PaymentDetails <-> UserScheme associations
+  PaymentDetails.hasOne(UserScheme, {
+    foreignKey: "payment_details_id",
+    as: "userScheme"
+  });
+  UserScheme.belongsTo(PaymentDetails, {
+    foreignKey: "payment_details_id",
+    as: "paymentDetails"
   });
 }; 

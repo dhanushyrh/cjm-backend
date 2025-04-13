@@ -3,15 +3,40 @@ import UserScheme, { UserSchemeStatus } from "../models/UserScheme";
 import User from "../models/User";
 import Scheme from "../models/Scheme";
 import Settings from "../models/Settings";
+import PaymentDetails from "../models/PaymentDetails";
 import { addMonths } from "date-fns";
 import { createInitialDeposit, createTransaction } from "./transactionService";
 import sequelize from "../config/database";
+import { TransactionType } from "../models/Transaction";
+
+export interface PaymentInfoType {
+  payment_mode: string;
+  payment_details: string;
+  supporting_document_url?: string;
+  amount: number;
+  payment_date: Date;
+}
+
+export interface UserSchemeOptions {
+  startDate?: Date;
+  endDate?: Date;
+  initialPoints?: number;
+  status?: UserSchemeStatus;
+  initialDeposit?: {
+    amount: number;
+    goldGrams: number;
+    transactionType: string;
+  };
+}
 
 export const createUserScheme = async (
   userId: string,
   schemeId: string,
-  transaction?: Transaction
-): Promise<{ userScheme: UserScheme; initialDeposit: any; bonusPoints?: number }> => {
+  transaction?: Transaction,
+  desired_item?: string,
+  paymentInfo?: PaymentInfoType,
+  options?: UserSchemeOptions
+): Promise<{ userScheme: UserScheme; initialDeposit: any; bonusPoints?: number; paymentDetails?: PaymentDetails | null }> => {
   // Create a transaction if not provided
   const t = transaction || await sequelize.transaction();
   
@@ -44,10 +69,38 @@ export const createUserScheme = async (
     });
 
     // Default to 0 if setting not found
-    const joinBonusPoints = joinBonusSetting ? parseInt(joinBonusSetting.value, 10) : 0;
+    const joinBonusPoints = options?.initialPoints !== undefined ? options.initialPoints : 
+      (joinBonusSetting ? parseInt(joinBonusSetting.value, 10) : 0);
 
-    const startDate = new Date();
-    const endDate = addMonths(startDate, scheme.duration);
+    const startDate = options?.startDate || new Date();
+    const endDate = options?.endDate || addMonths(startDate, scheme.duration);
+    
+    // Create payment details if provided
+    let paymentDetailsRecord = null;
+    if (paymentInfo) {
+      try {
+        paymentDetailsRecord = await PaymentDetails.create({
+          payment_mode: paymentInfo.payment_mode,
+          payment_details: paymentInfo.payment_details,
+          supporting_document_url: paymentInfo.supporting_document_url || null,
+          amount: paymentInfo.amount,
+          payment_date: paymentInfo.payment_date
+        }, { transaction: t });
+        
+        console.log("Created payment details:", paymentDetailsRecord.id);
+        
+        // If not using a transaction, we need to wait for the record to be fully committed
+        if (!transaction) {
+          await sequelize.query('SELECT * FROM "PaymentDetails" WHERE id = :id', { 
+            replacements: { id: paymentDetailsRecord.id },
+            transaction: t
+          });
+        }
+      } catch (err: any) {
+        console.error("Failed to create payment details:", err);
+        throw new Error(`Failed to create payment details: ${err.message}`);
+      }
+    }
     
     // Create new user scheme mapping with bonus points
     const userScheme = await UserScheme.create({
@@ -57,7 +110,9 @@ export const createUserScheme = async (
       endDate,
       totalPoints: joinBonusPoints,
       availablePoints: joinBonusPoints,
-      status: "ACTIVE"
+      status: options?.status || "ACTIVE",
+      desired_item: desired_item || null,
+      payment_details_id: paymentDetailsRecord ? paymentDetailsRecord.id : null
     }, { transaction: t })
     .catch(err => {
       // Provide more specific error messages for validation errors
@@ -69,10 +124,22 @@ export const createUserScheme = async (
     });
     
     // Create initial deposit transaction
-    const initialDeposit = await createInitialDeposit(userScheme.id, t)
-    .catch(err => {
-      throw new Error(`Failed to create initial deposit: ${err.message}`);
-    });
+    const initialDeposit = options?.initialDeposit ? 
+      await createTransaction({
+        userSchemeId: userScheme.id,
+        transactionType: options.initialDeposit.transactionType as TransactionType || "deposit",
+        amount: options.initialDeposit.amount,
+        goldGrams: options.initialDeposit.goldGrams,
+        points: 0,
+        description: `Initial deposit for ${scheme.name} scheme`,
+        transaction: t
+      }).catch(err => {
+        throw new Error(`Failed to create initial deposit: ${err.message}`);
+      }) : 
+      await createInitialDeposit(userScheme.id, t)
+      .catch(err => {
+        throw new Error(`Failed to create initial deposit: ${err.message}`);
+      });
     
     // Create bonus points transaction if there are any bonus points
     let bonusTransaction = null;
@@ -98,7 +165,8 @@ export const createUserScheme = async (
     return { 
       userScheme, 
       initialDeposit,
-      bonusPoints: joinBonusPoints
+      bonusPoints: joinBonusPoints,
+      paymentDetails: paymentDetailsRecord
     };
   } catch (error) {
     // Rollback transaction if we started it
@@ -190,4 +258,28 @@ export const getExpiredSchemes = async () => {
       }
     ]
   });
+};
+
+export const updateUserSchemeDesiredItem = async (
+  userSchemeId: string,
+  desired_item: string | null
+) => {
+  const userScheme = await UserScheme.findByPk(userSchemeId);
+  if (!userScheme) {
+    throw new Error("User scheme not found");
+  }
+
+  return await userScheme.update({ desired_item });
+};
+
+export const updateCertificateDeliveryStatus = async (
+  userSchemeId: string,
+  certificate_delivered: boolean
+) => {
+  const userScheme = await UserScheme.findByPk(userSchemeId);
+  if (!userScheme) {
+    throw new Error("User scheme not found");
+  }
+
+  return await userScheme.update({ certificate_delivered });
 }; 

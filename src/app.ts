@@ -15,6 +15,7 @@ import userSchemeRoutes from "./routes/userSchemeRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import settingsRoutes from "./routes/settingsRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
+import fileRoutes from "./routes/fileRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
@@ -52,6 +53,7 @@ app.use("/api/user-schemes", userSchemeRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/files", fileRoutes);
 
 // Swagger documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

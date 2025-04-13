@@ -152,7 +152,18 @@ export const getUserTransactions = async (
   const offset = (page - 1) * limit;
   
   const { count, rows } = await Transaction.findAndCountAll({
-    where: { userId },
+    where: { 
+      is_deleted: false // Only include non-deleted transactions
+    },
+    include: [{
+      model: UserScheme,
+      as: "userScheme",
+      where: { userId },
+      include: [
+        { model: User, as: "user" },
+        { model: Scheme, as: "scheme" }
+      ]
+    }],
     order: [["createdAt", "DESC"]],
     limit,
     offset
@@ -179,7 +190,18 @@ export const getTransactionsByScheme = async (
   const offset = (page - 1) * limit;
   
   const { count, rows } = await Transaction.findAndCountAll({
-    where: { schemeId },
+    where: { 
+      is_deleted: false // Only include non-deleted transactions
+    },
+    include: [{
+      model: UserScheme,
+      as: "userScheme",
+      where: { schemeId },
+      include: [
+        { model: User, as: "user" },
+        { model: Scheme, as: "scheme" }
+      ]
+    }],
     order: [["createdAt", "DESC"]],
     limit,
     offset

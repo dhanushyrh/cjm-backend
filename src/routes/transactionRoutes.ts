@@ -122,7 +122,7 @@ router.use(authenticateUser as RequestHandler);
  *       404:
  *         description: Scheme not found
  */
-router.get("/scheme/:userSchemeId", getSchemeTransactions);
+router.get("/scheme/:userSchemeId", getSchemeTransactions as RequestHandler);
 
 /**
  * @swagger
@@ -151,7 +151,7 @@ router.get("/scheme/:userSchemeId", getSchemeTransactions);
  *       404:
  *         description: Scheme not found
  */
-router.get("/scheme/:userSchemeId/summary", getSchemeTransactionSummary);
+router.get("/scheme/:userSchemeId/summary", getSchemeTransactionSummary as RequestHandler);
 
 /**
  * @swagger

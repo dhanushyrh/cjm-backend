@@ -4,8 +4,10 @@ import UserScheme from "./UserScheme";
 
 class User extends Model {
   public id!: string;
+  public userId!: string;
   public name!: string;
-  public address!: string;
+  public current_address!: string;
+  public permanent_address!: string;
   public email!: string;
   public password!: string;
   public nominee!: string;
@@ -14,6 +16,10 @@ class User extends Model {
   public dob!: Date;
   public agreeTerms!: boolean;
   public is_active!: boolean;
+  public receive_posts!: boolean;
+  public profile_image?: string;
+  public id_proof?: string;
+  public referred_by?: string;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -21,6 +27,8 @@ class User extends Model {
 
   // Associations
   public readonly schemes?: UserScheme[];
+  public readonly referrer?: User;
+  public readonly referrals?: User[];
 }
 
 User.init(
@@ -30,11 +38,20 @@ User.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    userId: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      unique: true,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    address: {
+    current_address: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    permanent_address: {
       type: DataTypes.TEXT,
       allowNull: false,
     },
@@ -74,11 +91,36 @@ User.init(
       allowNull: false,
       defaultValue: true,
     },
+    receive_posts: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    profile_image: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    id_proof: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    referred_by: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: "Users",
+        key: "id"
+      }
+    },
   },
   {
     sequelize,
     modelName: "User",
   }
 );
+
+// Add self-referential associations after model initialization
+User.belongsTo(User, { as: "referrer", foreignKey: "referred_by" });
+User.hasMany(User, { as: "referrals", foreignKey: "referred_by" });
 
 export default User;

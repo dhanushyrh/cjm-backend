@@ -9,7 +9,16 @@ const VALID_STATUSES = ["ACTIVE", "COMPLETED", "WITHDRAWN"] as const;
 
 export const createUserScheme = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, schemeId } = req.body;
+    const { 
+      userId, 
+      schemeId, 
+      desired_item,
+      payment_mode,
+      payment_details,
+      supporting_document_url,
+      amount,
+      payment_date 
+    } = req.body;
     
     if (!userId) {
       res.status(400).json({
@@ -29,7 +38,19 @@ export const createUserScheme = async (req: Request, res: Response): Promise<voi
       return;
     }
     
-    const result = await userSchemeService.createUserScheme(userId, schemeId);
+    // Prepare payment info if available
+    let paymentInfo = undefined;
+    if (payment_mode && payment_details && amount && payment_date) {
+      paymentInfo = {
+        payment_mode,
+        payment_details,
+        supporting_document_url: supporting_document_url || null,
+        amount: parseFloat(amount),
+        payment_date: new Date(payment_date)
+      };
+    }
+    
+    const result = await userSchemeService.createUserScheme(userId, schemeId, undefined, desired_item, paymentInfo);
     
     // Prepare response with bonus points information
     const response = {
@@ -201,6 +222,44 @@ export const getExpiredSchemes = async (req: Request, res: Response): Promise<vo
   }
 };
 
+export const updateUserSchemeDesiredItem = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userSchemeId } = req.params;
+    const { desired_item } = req.body;
+    
+    if (!userSchemeId) {
+      res.status(400).json({
+        success: false,
+        message: "User scheme ID is required"
+      });
+      return;
+    }
+    
+    // desired_item can be null or a string
+    if (desired_item !== null && desired_item !== undefined && typeof desired_item !== 'string') {
+      res.status(400).json({
+        success: false,
+        message: "desired_item must be a string or null"
+      });
+      return;
+    }
+    
+    const updatedScheme = await userSchemeService.updateUserSchemeDesiredItem(userSchemeId, desired_item);
+    
+    res.status(200).json({
+      success: true,
+      data: updatedScheme,
+      message: "Desired item updated successfully"
+    });
+  } catch (error) {
+    console.error("Error updating user scheme desired item:", error);
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update user scheme desired item"
+    });
+  }
+};
+
 // Get all user schemes (admin only)
 export const getAllUserSchemes = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -252,6 +311,43 @@ export const getAllUserSchemes = async (req: AuthRequest, res: Response): Promis
     res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : "Failed to get user schemes"
+    });
+  }
+};
+
+export const updateCertificateDeliveryStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userSchemeId } = req.params;
+    const { certificate_delivered } = req.body;
+    
+    if (!userSchemeId) {
+      res.status(400).json({
+        success: false,
+        message: "User scheme ID is required"
+      });
+      return;
+    }
+    
+    if (typeof certificate_delivered !== 'boolean') {
+      res.status(400).json({
+        success: false,
+        message: "certificate_delivered must be a boolean value"
+      });
+      return;
+    }
+    
+    const updatedScheme = await userSchemeService.updateCertificateDeliveryStatus(userSchemeId, certificate_delivered);
+    
+    res.status(200).json({
+      success: true,
+      message: certificate_delivered ? "Certificate marked as delivered" : "Certificate marked as not delivered",
+      data: updatedScheme
+    });
+  } catch (error) {
+    console.error("Error updating certificate delivery status:", error);
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update certificate delivery status"
     });
   }
 }; 

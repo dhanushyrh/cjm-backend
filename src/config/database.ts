@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// postgresql://postgres:CJ@hiranya91@db.fowikjzssfwpzzkvgyel.supabase.co:5432/postgres
+
 const sequelize = new Sequelize(
   process.env.DB_NAME || "cjm_db",
   process.env.DB_USER || "postgres",
@@ -30,6 +32,7 @@ import "../models/UserScheme";
 import "../models/Transaction";
 import "../models/GoldPrice";
 import "../models/Settings";
+import "../models/PaymentDetails";
 
 // Setup associations
 import { setupAssociations } from "../models/associations";
