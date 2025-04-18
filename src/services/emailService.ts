@@ -1,10 +1,19 @@
-import sgMail from '@sendgrid/mail';
+import  nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+
 
 dotenv.config();
 
-// Initialize SendGrid with API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+// Create a nodemailer transporter using SMTP credentials
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
 
 export interface EmailOptions {
   to: string;
@@ -17,29 +26,34 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
   try {
     const msg = {
       to: options.to,
-      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@chitjewelry.com',
+      from: process.env.FROM_EMAIL || 'info@hiranyajewellery.com',
       subject: options.subject,
       text: options.text,
       html: options.html || options.text
     };
+    
+    await transporter.sendMail(msg);
+    console.log(`Email sent to ${options.to}`);
 
-    await sgMail.send(msg);
   } catch (error) {
     console.error('Error sending email:', error);
     throw new Error('Failed to send email');
   }
 };
 
-export const sendWelcomeEmail = async (email: string, name: string): Promise<void> => {
-  const subject = 'Welcome to Chit Jewelry Management System';
-  const text = `Dear ${name},\n\nWelcome to Chit Jewelry Management System! We're excited to have you on board.\n\nYour account has been successfully created. You can now log in and start managing your jewelry schemes.\n\nBest regards,\nThe CJM Team`;
+export const sendWelcomeEmail = async (email: string, name: string, password: string): Promise<void> => {
+  const subject = 'Welcome to Hiranya';
+  const text = `Dear ${name},\n\nWelcome! We're excited to have you on board.\n\nYour account has been successfully created. You can now log in and start managing your jewelry schemes.\n\nBest regards,\nThe CJM Team`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Welcome to Chit Jewelry Management System!</h2>
+      <h2>Welcome to Hiranya!</h2>
       <p>Dear ${name},</p>
-      <p>Welcome to Chit Jewelry Management System! We're excited to have you on board.</p>
-      <p>Your account has been successfully created. You can now log in and start managing your jewelry schemes.</p>
+      <p>Welcome! We're excited to have you on board.</p>
+      <p>Your account has been successfully created. You can now log in and start managing your jewellery schemes.</p>
+      <p>Your login credentials are:</p>
+      <p>Email: ${email}</p>
+      <p>Password: ${password}</p>
       <br>
       <p>Best regards,<br>The CJM Team</p>
     </div>
@@ -73,4 +87,4 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
     text,
     html
   });
-}; 
+};
