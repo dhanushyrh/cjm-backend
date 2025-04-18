@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { checkRedemptionEligibility, createRedemptionRequest, getUserRedemptionRequests } from "../services/pointRedemptionService";
 import UserScheme from "../models/UserScheme";
 import { AuthRequest } from "../middleware/authMiddleware";
+import { isWithinRedemptionWindow } from "../services/pointRedemptionService";
 
 // Check if user can redeem points
 export const checkEligibility = async (req: AuthRequest, res: Response) => {
@@ -31,12 +32,21 @@ export const checkEligibility = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Check redemption window
+    const { isWithin, maxDay } = await isWithinRedemptionWindow();
+    
+    // Get eligibility (which also checks redemption window)
     const eligibility = await checkRedemptionEligibility(userSchemeId);
 
     return res.json({
       success: true,
       data: {
         ...eligibility,
+        redemptionWindow: {
+          isWithinWindow: isWithin,
+          maxDay,
+          currentDay: new Date().getDate()
+        },
         userSchemeId
       }
     });
@@ -67,6 +77,15 @@ export const redeemUserPoints = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         success: false,
         message: "Invalid points value. Must be a positive number."
+      });
+    }
+
+    // Check if within redemption window
+    const { isWithin, maxDay } = await isWithinRedemptionWindow();
+    if (!isWithin) {
+      return res.status(400).json({
+        success: false,
+        message: `Redemption requests must be made within the first ${maxDay} days of each month.`
       });
     }
 

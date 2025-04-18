@@ -16,8 +16,52 @@ interface RedemptionEligibility {
   pointsNeeded?: number;
 }
 
+export const isWithinRedemptionWindow = async (): Promise<{isWithin: boolean, maxDay?: number}> => {
+  try {
+    // Get redemption window setting
+    const redemptionWindowSetting = await Settings.findOne({
+      where: {
+        key: "redemptionWindow",
+        is_deleted: false
+      }
+    });
+    
+    // If setting not found, default to 5 days
+    const maxDay = redemptionWindowSetting ? parseInt(redemptionWindowSetting.value) : 5;
+    if (!redemptionWindowSetting) {
+      console.warn("redemptionWindow setting not found, using default value of 5 days");
+    }
+    
+    // Get current date
+    const today = new Date();
+    const currentDay = today.getDate();
+    
+    // Check if today is within the redemption window
+    return {
+      isWithin: currentDay <= maxDay,
+      maxDay
+    };
+  } catch (error) {
+    console.error("Error checking redemption window:", error);
+    // Default to false if there's an error
+    return { isWithin: false };
+  }
+};
+
 export const checkRedemptionEligibility = async (userSchemeId: string): Promise<RedemptionEligibility> => {
   try {
+    // Check if within redemption window
+    const { isWithin, maxDay } = await isWithinRedemptionWindow();
+    
+    if (!isWithin) {
+      return {
+        isEligible: false,
+        reason: `Redemption requests must be made within the first ${maxDay} days of each month.`,
+        availablePoints: 0,
+        minimumPoints: 0
+      };
+    }
+    
     // Get minimum points requirement from settings
     const minPointsSetting = await Settings.findOne({
       where: {
@@ -95,6 +139,12 @@ export const createRedemptionRequest = async (
   transaction?: SequelizeTransaction
 ): Promise<RedemptionRequest> => {
   try {
+    // Check if within redemption window
+    const { isWithin, maxDay } = await isWithinRedemptionWindow();
+    if (!isWithin) {
+      throw new Error(`Redemption requests must be made within the first ${maxDay} days of each month.`);
+    }
+    
     // Check eligibility
     const eligibility = await checkRedemptionEligibility(userSchemeId);
     if (!eligibility.isEligible) {
