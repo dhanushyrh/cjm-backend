@@ -148,6 +148,8 @@ export const updateUserDetails = async (userId: string, userDetails: {
   permanent_address?: string;
   nominee?: string;
   relation?: string;
+  profile_image?: string;
+  id_proof?: string;
 }): Promise<User> => {
   const user = await User.findByPk(userId);
   if (!user) throw new Error("User not found");
@@ -159,7 +161,9 @@ export const updateUserDetails = async (userId: string, userDetails: {
     ...(userDetails.current_address && { current_address: userDetails.current_address }),
     ...(userDetails.permanent_address && { permanent_address: userDetails.permanent_address }),
     ...(userDetails.nominee && { nominee: userDetails.nominee }),
-    ...(userDetails.relation && { relation: userDetails.relation })
+    ...(userDetails.relation && { relation: userDetails.relation }),
+    ...(userDetails.profile_image && { profile_image: userDetails.profile_image }),
+    ...(userDetails.id_proof && { id_proof: userDetails.id_proof })
   });
 
   return user;

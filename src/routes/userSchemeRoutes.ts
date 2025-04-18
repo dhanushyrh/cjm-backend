@@ -57,19 +57,12 @@ router.post("/", authenticateAdmin as RequestHandler, userSchemeController.creat
 
 /**
  * @swagger
- * /api/user-schemes/user/{userId}:
+ * /api/user-schemes/my-schemes:
  *   get:
  *     tags: [User Schemes]
- *     summary: Get all schemes for a user
+ *     summary: Get all schemes for the authenticated user
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
  *     responses:
  *       200:
  *         description: List of user schemes
@@ -89,7 +82,7 @@ router.post("/", authenticateAdmin as RequestHandler, userSchemeController.creat
  *       401:
  *         description: Unauthorized
  */
-router.get("/user/:userId", authenticateUser as RequestHandler, userSchemeController.getUserSchemes);
+router.get("/list", authenticateUser as RequestHandler, userSchemeController.getUserSchemes);
 
 /**
  * @swagger

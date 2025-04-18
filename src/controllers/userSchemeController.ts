@@ -71,14 +71,15 @@ export const createUserScheme = async (req: Request, res: Response): Promise<voi
   }
 };
 
-export const getUserSchemes = async (req: Request, res: Response): Promise<void> => {
+export const getUserSchemes = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const userId = req.params.userId;
+    // Get userId from the authenticated user token instead of params
+    const userId = req.user.id;
     
     if (!userId) {
       res.status(400).json({
         success: false,
-        message: "User ID is required"
+        message: "User ID not found in token"
       });
       return;
     }

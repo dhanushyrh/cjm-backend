@@ -6,6 +6,7 @@ import { createTransaction } from "./transactionService";
 import Transaction from "../models/Transaction";
 import db from "../config/database";
 import User from "../models/User";
+import Scheme from "../models/Scheme";
 
 interface RedemptionEligibility {
   isEligible: boolean;
@@ -224,6 +225,69 @@ export const getAllRedemptionRequests = async ({
             model: User,
             as: "user",
             attributes: ["id", "name", "email"]
+          }
+        ]
+      }
+    ],
+    order: [["createdAt", "DESC"]],
+    limit,
+    offset
+  });
+
+  return {
+    requests: rows,
+    pagination: {
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit)
+    }
+  };
+};
+
+export const getUserRedemptionRequests = async (
+  userId: string,
+  page: number = 1,
+  limit: number = 10
+) => {
+  const offset = (page - 1) * limit;
+  
+  // Find all userSchemes for this user
+  const userSchemes = await UserScheme.findAll({
+    where: { userId, is_deleted: false },
+    attributes: ['id']
+  });
+  
+  // Get the IDs of all user schemes
+  const userSchemeIds = userSchemes.map(scheme => scheme.id);
+  
+  if (userSchemeIds.length === 0) {
+    return {
+      requests: [],
+      pagination: {
+        total: 0,
+        page,
+        limit,
+        totalPages: 0
+      }
+    };
+  }
+  
+  const { count, rows } = await RedemptionRequest.findAndCountAll({
+    where: {
+      userSchemeId: userSchemeIds,
+      is_deleted: false
+    },
+    include: [
+      {
+        model: UserScheme,
+        as: "userScheme",
+        attributes: ["id", "schemeId", "availablePoints", "desired_item"],
+        include: [
+          {
+            model: Scheme,
+            as: "scheme",
+            attributes: ["id", "name", "duration", "goldGrams"]
           }
         ]
       }

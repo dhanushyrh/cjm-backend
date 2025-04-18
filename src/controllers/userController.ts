@@ -85,7 +85,7 @@ export const removeUser = async (req: Request, res: Response) => {
 export const updateUserStatus = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { isActive } = req.body;
+    const { is_active } = req.body;
 
     // Validate required fields
     if (userId === undefined) {
@@ -95,26 +95,26 @@ export const updateUserStatus = async (req: Request, res: Response) => {
       });
     }
 
-    if (isActive === undefined) {
+    if (is_active === undefined) {
       return res.status(400).json({
-        error: "Missing isActive status",
-        details: "isActive boolean status is required"
+        error: "Missing is_active status",
+        details: "is_active boolean status is required"
       });
     }
 
-    // Validate isActive is boolean
-    if (typeof isActive !== 'boolean') {
+    // Validate is_active is boolean
+    if (typeof is_active !== 'boolean') {
       return res.status(400).json({
-        error: "Invalid isActive value",
-        details: "isActive must be a boolean value"
+        error: "Invalid is_active value",
+        details: "is_active must be a boolean value"
       });
     }
 
-    const updatedUser = await updateUserActiveStatus(userId, isActive);
+    const updatedUser = await updateUserActiveStatus(userId, is_active);
     const serializedUser = serializeUser(updatedUser);
 
     res.status(200).json({
-      message: `User status ${isActive ? 'activated' : 'deactivated'} successfully`,
+      message: `User status ${is_active ? 'activated' : 'deactivated'} successfully`,
       user: serializedUser
     });
   } catch (error: any) {
@@ -231,10 +231,10 @@ export const fetchUserById = async (req: Request, res: Response) => {
 export const updateUserDetailsController = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { mobile, dob, current_address, permanent_address, nominee, relation } = req.body;
+    const { mobile, dob, current_address, permanent_address, nominee, relation, profile_image, id_proof } = req.body;
 
     // Validate that at least one field to update was provided
-    if (!mobile && !dob && !current_address && !permanent_address && !nominee && !relation) {
+    if (!mobile && !dob && !current_address && !permanent_address && !nominee && !relation && !profile_image && !id_proof) {
       return res.status(400).json({
         success: false,
         error: "No update fields provided",
@@ -258,7 +258,9 @@ export const updateUserDetailsController = async (req: Request, res: Response) =
       current_address,
       permanent_address,
       nominee,
-      relation
+      relation,
+      profile_image,
+      id_proof
     });
 
     const serializedUser = serializeUser(updatedUser);

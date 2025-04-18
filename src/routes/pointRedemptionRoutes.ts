@@ -1,5 +1,5 @@
 import express, { RequestHandler } from "express";
-import { checkEligibility, redeemUserPoints } from "../controllers/pointRedemptionController";
+import { checkEligibility, redeemUserPoints, getMyRedemptionRequests } from "../controllers/pointRedemptionController";
 import { authenticateUser } from "../middleware/authMiddleware";
 
 const router = express.Router();
@@ -131,5 +131,62 @@ router.get("/check/:userSchemeId", (checkEligibility as unknown) as RequestHandl
  *         description: User scheme not found
  */
 router.post("/redeem/:userSchemeId", (redeemUserPoints as unknown) as RequestHandler);
+
+/**
+ * @swagger
+ * /api/points/my-requests:
+ *   get:
+ *     tags: [Point Redemption]
+ *     summary: Get authenticated user's redemption requests
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: List of user's redemption requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     requests:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/RedemptionRequest'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         totalPages:
+ *                           type: integer
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/requests", (getMyRedemptionRequests as unknown) as RequestHandler);
 
 export default router; 

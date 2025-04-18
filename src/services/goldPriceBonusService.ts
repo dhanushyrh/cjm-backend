@@ -175,7 +175,7 @@ export const calculateAndAddBonusPoints = async (newPrice: GoldPrice, previousPr
           const bonusTransaction = await createTransaction({
             userSchemeId: userScheme.id,
             transactionType: "points",
-            amount: amount,
+            amount: 0,
             goldGrams: 0, // No gold grams for bonus points
             points: schemePoints,
             priceRefId: newPrice.id, // Add reference to the gold price

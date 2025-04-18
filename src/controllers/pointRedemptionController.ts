@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { checkRedemptionEligibility, createRedemptionRequest } from "../services/pointRedemptionService";
+import { checkRedemptionEligibility, createRedemptionRequest, getUserRedemptionRequests } from "../services/pointRedemptionService";
 import UserScheme from "../models/UserScheme";
 import { AuthRequest } from "../middleware/authMiddleware";
 
@@ -102,6 +102,52 @@ export const redeemUserPoints = async (req: AuthRequest, res: Response) => {
     return res.status(400).json({
       success: false,
       message: error instanceof Error ? error.message : "Failed to create redemption request"
+    });
+  }
+};
+
+// Get user's redemption requests
+export const getMyRedemptionRequests = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required"
+      });
+    }
+
+    // Get pagination parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Page must be greater than 0"
+      });
+    }
+    
+    if (limit < 1 || limit > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit must be between 1 and 100"
+      });
+    }
+
+    const result = await getUserRedemptionRequests(userId, page, limit);
+
+    return res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error("Error getting user redemption requests:", error);
+    return res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to get redemption requests"
     });
   }
 };
