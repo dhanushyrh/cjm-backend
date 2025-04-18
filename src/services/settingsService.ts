@@ -7,18 +7,13 @@ export const getSetting = async (key: string) => {
 
 export const getSettings = async () => {
   const settings = await Settings.findAll();
-  return settings.reduce((acc, setting) => {
-    acc[setting.key] = setting.value;
-    return acc;
-  }, {} as Record<string, any>);
+  return settings;
 };
 
-export const setSetting = async (key: string, value: any, description?: string, isSystem: boolean = false) => {
+export const setSetting = async (key: string, value: any) => {
   const [setting] = await Settings.upsert({
     key,
-    value,
-    description,
-    isSystem
+    value
   });
   return setting;
 };
@@ -27,10 +22,6 @@ export const deleteSetting = async (key: string): Promise<boolean> => {
   const setting = await Settings.findOne({ where: { key } });
   if (!setting) return false;
   
-  if (setting.isSystem) {
-    throw new Error("Cannot delete system settings");
-  }
-
   await setting.destroy();
   return true;
 };
@@ -40,31 +31,23 @@ export const initializeDefaultSettings = async () => {
   const defaultSettings = [
     {
       key: "pointValue",
-      value: 0.1, // 1 point = 0.1 grams of gold
-      description: "Value of one point in gold grams",
-      isSystem: true
+      value: 0.1 // 1 point = 0.1 grams of gold
     },
     {
       key: "minDepositAmount",
-      value: 1000,
-      description: "Minimum deposit amount in rupees",
-      isSystem: true
+      value: 1000
     },
     {
       key: "maxWithdrawalAmount",
-      value: 100000,
-      description: "Maximum withdrawal amount in rupees",
-      isSystem: true
+      value: 100000
     },
     {
       key: "maintenanceMode",
-      value: false,
-      description: "System maintenance mode flag",
-      isSystem: true
+      value: false
     }
   ];
 
   for (const setting of defaultSettings) {
-    await setSetting(setting.key, setting.value, setting.description, setting.isSystem);
+    await setSetting(setting.key, setting.value);
   }
 }; 

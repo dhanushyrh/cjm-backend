@@ -6,13 +6,40 @@ import sequelize from "./config/database";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import adminAuthRoutes from "./routes/adminAuthRoutes";
+import adminRedemptionRoutes from "./routes/adminRedemptionRoutes";
+import adminTransactionRoutes from "./routes/adminTransactionRoutes";
 import oas from "express-oas-generator";
+import goldPriceRoutes from "./routes/goldPriceRoutes";
+import pointRedemptionRoutes from "./routes/pointRedemptionRoutes";
+import userSchemeRoutes from "./routes/userSchemeRoutes";
+import transactionRoutes from "./routes/transactionRoutes";
+import settingsRoutes from "./routes/settingsRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
+import fileRoutes from "./routes/fileRoutes";
+import analyticsRoutes from "./routes/analyticsRoutes";
+import referralRoutes from "./routes/referralRoutes";
+import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 dotenv.config();
 const app = express();
 oas.init(app as any, {});
 
-app.use(cors());
+// Configure CORS
+const corsOptions = {
+  origin: [
+    'http://localhost:8080',
+    'http://localhost:3000',
+    /\.ngrok-free\.app$/  // Allow all ngrok URLs
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+};
+
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(express.json());
 
@@ -20,6 +47,20 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminAuthRoutes);
+app.use("/api/admin/redemption", adminRedemptionRoutes);
+app.use("/api/admin", adminTransactionRoutes);
+app.use("/api/gold-prices", goldPriceRoutes);
+app.use("/api/points", pointRedemptionRoutes);
+app.use("/api/user-schemes", userSchemeRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/files", fileRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/referrals", referralRoutes);
+
+// Swagger documentation
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/", async (req, res) => {
   try {
@@ -29,5 +70,8 @@ app.get("/", async (req, res) => {
     res.status(500).send("Database connection failed");
   }
 });
+
+// Start schedulers
+startPointsRecalculationScheduler();
 
 export default app;

@@ -4,9 +4,12 @@ import sequelize from "../config/database";
 class Settings extends Model {
   public id!: string;
   public key!: string;
-  public value!: string | number | boolean;
-  public description?: string;
-  public isSystem!: boolean;
+  public value!: string;
+  public is_deleted!: boolean;
+  
+  // Timestamps
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
 Settings.init(
@@ -24,23 +27,8 @@ Settings.init(
     value: {
       type: DataTypes.STRING,
       allowNull: false,
-      get() {
-        const rawValue = this.getDataValue('value');
-        try {
-          return JSON.parse(rawValue);
-        } catch {
-          return rawValue;
-        }
-      },
-      set(value: any) {
-        this.setDataValue('value', JSON.stringify(value));
-      }
     },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    isSystem: {
+    is_deleted: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,

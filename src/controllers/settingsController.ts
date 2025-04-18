@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { getSetting, getSettings, setSetting, deleteSetting } from "../services/settingsService";
+import Settings from "../models/Settings";
 
 export const fetchSettings = async (_req: Request, res: Response) => {
   try {
@@ -22,26 +23,27 @@ export const fetchSettings = async (_req: Request, res: Response) => {
 
 export const fetchSetting = async (req: Request, res: Response) => {
   try {
-    const { key } = req.params;
+    const { id } = req.params;
 
-    if (!key) {
+    if (!id) {
       return res.status(400).json({ 
-        error: "Missing setting key",
-        details: "Setting key is required"
+        error: "Missing setting ID",
+        details: "Setting ID is required"
       });
     }
 
-    const value = await getSetting(key);
-    if (value === undefined) {
+    // Find setting by ID
+    const setting = await Settings.findByPk(id);
+    if (!setting) {
       return res.status(404).json({ 
         error: "Setting not found",
-        details: "No setting found with the provided key"
+        details: "No setting found with the provided ID"
       });
     }
 
     res.status(200).json({
       message: "Setting fetched successfully",
-      data: { key, value }
+      data: setting
     });
   } catch (error: any) {
     console.error("Setting Fetch Error:", {
@@ -54,10 +56,9 @@ export const fetchSetting = async (req: Request, res: Response) => {
   }
 };
 
-export const updateSetting = async (req: Request, res: Response) => {
+export const createSetting = async (req: Request, res: Response) => {
   try {
-    const { key } = req.params;
-    const { value, description, isSystem } = req.body;
+    const { key, value } = req.body;
 
     if (!key) {
       return res.status(400).json({ 
@@ -73,7 +74,54 @@ export const updateSetting = async (req: Request, res: Response) => {
       });
     }
 
-    const setting = await setSetting(key, value, description, isSystem);
+    const setting = await setSetting(key, value);
+    
+    res.status(201).json({
+      message: "Setting created successfully",
+      data: setting
+    });
+  } catch (error: any) {
+    console.error("Setting Creation Error:", {
+      message: error.message,
+      stack: error.stack,
+      details: error.errors || error
+    });
+
+    res.status(500).json({ error: "Failed to create setting" });
+  }
+};
+
+export const updateSetting = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { value } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ 
+        error: "Missing setting ID",
+        details: "Setting ID is required"
+      });
+    }
+
+    if (value === undefined) {
+      return res.status(400).json({ 
+        error: "Missing value",
+        details: "Setting value is required"
+      });
+    }
+
+    // Find the setting first
+    const setting = await Settings.findByPk(id);
+    if (!setting) {
+      return res.status(404).json({ 
+        error: "Setting not found",
+        details: "No setting found with the provided ID"
+      });
+    }
+
+    // Update the setting
+    setting.value = value;
+    await setting.save();
     
     res.status(200).json({
       message: "Setting updated successfully",
@@ -92,6 +140,45 @@ export const updateSetting = async (req: Request, res: Response) => {
 
 export const removeSetting = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ 
+        error: "Missing setting ID",
+        details: "Setting ID is required"
+      });
+    }
+
+    // Find setting by ID
+    const setting = await Settings.findByPk(id);
+    if (!setting) {
+      return res.status(404).json({ 
+        error: "Setting not found",
+        details: "No setting found with the provided ID"
+      });
+    }
+
+    // Delete the setting
+    await setting.destroy();
+
+    res.status(200).json({ 
+      message: "Setting deleted successfully",
+      id
+    });
+  } catch (error: any) {
+    console.error("Setting Delete Error:", {
+      message: error.message,
+      stack: error.stack,
+      details: error.errors || error
+    });
+
+    res.status(500).json({ error: "Failed to delete setting" });
+  }
+};
+
+// Add a new controller method to get a setting by key
+export const fetchSettingByKey = async (req: Request, res: Response) => {
+  try {
     const { key } = req.params;
 
     if (!key) {
@@ -101,32 +188,32 @@ export const removeSetting = async (req: Request, res: Response) => {
       });
     }
 
-    const deleted = await deleteSetting(key);
-    if (!deleted) {
+    const settingValue = await getSetting(key);
+    
+    if (settingValue === undefined) {
       return res.status(404).json({ 
         error: "Setting not found",
-        details: "No setting found with the provided key"
+        details: `No setting found with key: ${key}`
       });
     }
 
-    res.status(200).json({ 
-      message: "Setting deleted successfully",
-      key
+    res.status(200).json({
+      success: true,
+      data: {
+        key,
+        value: settingValue
+      }
     });
   } catch (error: any) {
-    console.error("Setting Delete Error:", {
+    console.error("Setting Fetch By Key Error:", {
       message: error.message,
       stack: error.stack,
       details: error.errors || error
     });
 
-    if (error.message === "Cannot delete system settings") {
-      return res.status(403).json({ 
-        error: "Cannot delete system settings",
-        details: "System settings are protected and cannot be deleted"
-      });
-    }
-
-    res.status(500).json({ error: "Failed to delete setting" });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch setting" 
+    });
   }
 }; 
