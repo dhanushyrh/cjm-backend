@@ -33,6 +33,7 @@ import "../models/Transaction";
 import "../models/GoldPrice";
 import "../models/Settings";
 import "../models/PaymentDetails";
+import "../models/Referral";
 
 // Setup associations
 import { setupAssociations } from "../models/associations";

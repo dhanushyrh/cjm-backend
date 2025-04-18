@@ -1,6 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
 import UserScheme from "./UserScheme";
+import Referral from "./Referral";
 
 class User extends Model {
   public id!: string;
@@ -29,6 +30,7 @@ class User extends Model {
   public readonly schemes?: UserScheme[];
   public readonly referrer?: User;
   public readonly referrals?: User[];
+  public readonly userReferrals?: Referral[];
 }
 
 User.init(
@@ -116,6 +118,7 @@ User.init(
   {
     sequelize,
     modelName: "User",
+    tableName: "Users",
   }
 );
 

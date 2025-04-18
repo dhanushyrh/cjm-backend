@@ -6,6 +6,7 @@ import GoldPrice from "./GoldPrice";
 import RedemptionRequest from "./RedemptionRequest";
 import Admin from "./Admin";
 import PaymentDetails from "./PaymentDetails";
+import Referral from "./Referral";
 
 export const setupAssociations = () => {
   // User <-> UserScheme associations
@@ -72,5 +73,15 @@ export const setupAssociations = () => {
   UserScheme.belongsTo(PaymentDetails, {
     foreignKey: "payment_details_id",
     as: "paymentDetails"
+  });
+
+  // User <-> Referral associations
+  User.hasMany(Referral, {
+    foreignKey: "userId",
+    as: "userReferrals"
+  });
+  Referral.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user"
   });
 }; 
