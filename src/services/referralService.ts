@@ -52,7 +52,7 @@ export const getReferralById = async (referralId: string) => {
       {
         model: User,
         as: "user",
-        attributes: ["id", "name", "email", "phone"]
+        attributes: ["id", "name", "email", "mobile"]
       }
     ]
   });
@@ -94,7 +94,7 @@ export const getReferrals = async ({
       {
         model: User,
         as: "user",
-        attributes: ["id", "name", "email", "phone"]
+        attributes: ["id", "name", "email", "mobile"]
       }
     ],
     order: [["createdAt", "DESC"]],

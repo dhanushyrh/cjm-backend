@@ -7,6 +7,8 @@ import RedemptionRequest from "./RedemptionRequest";
 import Admin from "./Admin";
 import PaymentDetails from "./PaymentDetails";
 import Referral from "./Referral";
+import Circular from "./Circular";
+import CircularView from "./CircularView";
 
 export const setupAssociations = () => {
   // User <-> UserScheme associations
@@ -81,6 +83,26 @@ export const setupAssociations = () => {
     as: "userReferrals"
   });
   Referral.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user"
+  });
+
+  // Circular <-> CircularView associations
+  Circular.hasMany(CircularView, {
+    foreignKey: "circularId",
+    as: "views"
+  });
+  CircularView.belongsTo(Circular, {
+    foreignKey: "circularId",
+    as: "circular"
+  });
+
+  // User <-> CircularView associations
+  User.hasMany(CircularView, {
+    foreignKey: "userId",
+    as: "circularViews"
+  });
+  CircularView.belongsTo(User, {
     foreignKey: "userId",
     as: "user"
   });

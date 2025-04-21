@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
+import morgan from "morgan";
 import sequelize from "./config/database";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
@@ -18,13 +19,19 @@ import dashboardRoutes from "./routes/dashboardRoutes";
 import fileRoutes from "./routes/fileRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import referralRoutes from "./routes/referralRoutes";
+import circularRoutes from "./routes/circularRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
+import { stream as winstonStream } from './config/winston';
 
 dotenv.config();
 const app = express();
 oas.init(app as any, {});
+
+// Set up Morgan logger with Winston stream
+const morganFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
+app.use(morgan(morganFormat, { stream: winstonStream }));
 
 // Configure CORS
 const corsOptions = {
@@ -58,6 +65,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/referrals", referralRoutes);
+app.use("/api/circulars", circularRoutes);
 
 // Swagger documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

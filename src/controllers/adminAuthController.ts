@@ -10,6 +10,10 @@ import { serializeUser } from "../serializers/userSerializer";
 import { createUserScheme } from "../services/userSchemeService";
 import { sendWelcomeEmail } from "../services/emailService";
 import { generateUniqueUserId } from "../utils/idGenerator";
+import UserScheme from "../models/UserScheme";
+import Settings from "../models/Settings";
+import Scheme from "../models/Scheme";
+import { createTransaction } from "../services/transactionService";
 
 // Register a new admin
 export const registerAdmin = async (req: Request, res: Response) => {
@@ -200,6 +204,49 @@ export const registerUser = async (req: Request, res: Response) => {
           console.error("Error creating user scheme:", schemeError);
           // Continue with user creation even if scheme mapping fails
         }
+      }
+
+      if(referrerId){
+        let refbonusPoints = 0;
+        const referrer = await UserScheme.findOne({where: {userId: referrerId}});
+        if(referrer){
+          const referralBonus = await Settings.findOne({
+            where: { 
+              key: 'referral_bonus',
+              is_deleted: false
+            },
+            transaction: t
+          });
+          const scheme = await Scheme.findByPk(schemeId, {transaction: t});
+          if(referralBonus && scheme){
+            const referralBonusAmount = parseFloat(referralBonus.value);
+            const referralBonusPoints = referralBonusAmount * scheme.goldGrams;
+            refbonusPoints = referralBonusPoints;
+          }
+
+          //get referrers user scheme
+          const referrerUserScheme = await UserScheme.findOne({where: {userId: referrerId, status: "ACTIVE"}});
+          if(referrerUserScheme){
+            referrerUserScheme.availablePoints += refbonusPoints;
+            referrerUserScheme.totalPoints += refbonusPoints;
+            await referrerUserScheme.save();
+
+
+            const bonusTransaction = await createTransaction({
+              userSchemeId: referrerUserScheme.id,
+              transactionType: "points",
+              amount: 0, // No amount for bonus points
+              goldGrams: 0, // No gold grams for bonus points
+              points: refbonusPoints,
+              description: `Referral bonus points ${refbonusPoints} awarded for joining ${name}.`,
+              transaction: t
+            }).catch(err => {
+              throw new Error(`Failed to create bonus points transaction: ${err.message}`);
+            });
+          }
+          
+        }
+
       }
 
       return { user, userScheme, initialDeposit, bonusPoints, paymentDetails };

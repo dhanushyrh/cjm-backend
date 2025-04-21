@@ -191,7 +191,17 @@ export const approveRedemption = async (
     if (request.status !== "PENDING") {
       throw new Error("Can only process pending requests");
     }
-
+    const convienienceFee = await Settings.findOne({
+      where: {
+        key: "convenienceFee",
+        is_deleted: false
+      }
+    });
+    if (!convienienceFee) {
+      throw new Error("Convenience fee not found");
+    }
+    const convienienceFeeValue = convienienceFee.value ? parseFloat(convienienceFee.value) : 0;
+    
     // Update request status
     await request.update(
       {
@@ -214,9 +224,19 @@ export const approveRedemption = async (
         redeemReqId: requestId
       });
 
+      await createTransaction({
+        userSchemeId: request.userSchemeId,
+        transactionType: "convenience_fee",
+        amount: 0, // No amount for bonus withdrawals
+        goldGrams: 0,
+        description: `Convenience fee of ${convienienceFeeValue} points deducted for redemption`,
+        points: -convienienceFeeValue, // Negative points for withdrawal
+        redeemReqId: requestId
+      });
+
       // Update user scheme points
       await UserScheme.decrement(
-        { availablePoints: request.points },
+        { availablePoints: request.points + convienienceFeeValue },
         { 
           where: { id: request.userSchemeId },
           transaction: t 
