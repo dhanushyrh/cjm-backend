@@ -135,7 +135,7 @@ export const calculateAndAddBonusPoints = async (newPrice: GoldPrice, previousPr
     };
 
     // Calculate price difference
-    const priceDifference = Number(newPrice.pricePerGram) - Number(previousPrice.pricePerGram);
+    const priceDifference = Math.trunc(Number(newPrice.pricePerGram)) - Math.trunc(Number(previousPrice.pricePerGram));
     
     // Get all active user schemes
     const activeUserSchemes = await UserScheme.findAll({

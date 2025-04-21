@@ -470,7 +470,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
         totalWithdrawals,
         totalAmount,
         totalGoldGrams,
-        totalPoints,
+        totalPoints : totalPoints,
         transactionsByType
       },
       redemptionStats: {

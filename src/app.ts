@@ -21,6 +21,7 @@ import analyticsRoutes from "./routes/analyticsRoutes";
 import referralRoutes from "./routes/referralRoutes";
 import circularRoutes from "./routes/circularRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
+import { startGoldAccrualScheduler } from "./schedulers/goldAccrualScheduler";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { stream as winstonStream } from './config/winston';
@@ -81,5 +82,6 @@ app.get("/", async (req, res) => {
 
 // Start schedulers
 startPointsRecalculationScheduler();
+startGoldAccrualScheduler().catch(err => console.error("Failed to start gold accrual scheduler:", err));
 
 export default app;

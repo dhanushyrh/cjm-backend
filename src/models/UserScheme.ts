@@ -18,6 +18,7 @@ class UserScheme extends Model {
   public desired_item?: string;
   public payment_details_id?: string;
   public certificate_delivered!: boolean;
+  public accrued_gold!: number | null;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -91,6 +92,11 @@ UserScheme.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    accrued_gold: {
+      type: DataTypes.DECIMAL(8, 2),
+      allowNull: true,
+      defaultValue: null,
     }
   },
   {

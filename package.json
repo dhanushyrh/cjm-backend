@@ -8,7 +8,9 @@
     "dev": "cross-env NODE_ENV=development nodemon src/server.ts",
     "dev:prod": "cross-env NODE_ENV=production nodemon src/server.ts",
     "build": "tsc",
+    "build:swc": "swc src -d dist",
     "start": "node dist/server.js",
+    "start:swc": "dotenvx run -f .env -- npm run build:swc && node dist/src/server.js",
     "start:dev": "cross-env NODE_ENV=development node dist/server.js",
     "start:prod": "cross-env NODE_ENV=production node dist/server.js",
     "start:pm2": "pm2 start dist/server.js --name cjm-backend",
@@ -59,6 +61,9 @@
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "@swc/cli": "^0.7.3",
+    "@swc/core": "^1.11.21",
+    "@swc/helpers": "^0.5.17",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
@@ -79,6 +84,7 @@
     "nodemon": "^3.1.9",
     "pg": "^8.14.1",
     "prettier": "^3.1.0",
+    "rimraf": "^6.0.1",
     "supertest": "^7.1.0",
     "ts-jest": "^29.3.0",
     "ts-node": "^10.9.2",

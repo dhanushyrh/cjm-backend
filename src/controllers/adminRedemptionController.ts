@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../middleware/authMiddleware";
 import { approveRedemption, getAllRedemptionRequests } from "../services/pointRedemptionService";
 import { RedemptionStatus } from "../models/RedemptionRequest";
+import { convertPointsToAccruedGold } from "../services/userSchemeService";
 
 // Get all redemption requests with optional filters
 export const getRedemptionRequests = async (req: AuthRequest, res: Response) => {
@@ -63,3 +64,22 @@ export const updateRedemptionStatus = async (req: AuthRequest, res: Response) =>
     });
   }
 }; 
+
+// Trigger gold accrual
+export const triggerGoldAccrual = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await convertPointsToAccruedGold();
+    return res.json({
+      success: true,
+      message: "Gold accrual triggered",
+      data: result
+    });
+  }
+  catch(error){
+    console.error("Error triggering gold accrual:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to trigger gold accrual"
+    });
+  }
+};

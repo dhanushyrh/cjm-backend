@@ -212,7 +212,7 @@ export const registerUser = async (req: Request, res: Response) => {
         if(referrer){
           const referralBonus = await Settings.findOne({
             where: { 
-              key: 'referral_bonus',
+              key: 'referralBonus',
               is_deleted: false
             },
             transaction: t

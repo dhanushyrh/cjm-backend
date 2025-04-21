@@ -8,6 +8,7 @@ import { addMonths } from "date-fns";
 import { createInitialDeposit, createTransaction } from "./transactionService";
 import sequelize from "../config/database";
 import { TransactionType } from "../models/Transaction";
+import { getSetting } from "./settingsService";
 
 export interface PaymentInfoType {
   payment_mode: string;
@@ -220,8 +221,16 @@ export const updateUserSchemeStatus = async (
   if (!userScheme) {
     throw new Error("User scheme not found");
   }
+  if (status === "WITHDRAWN") {
+     // create a redeem request for the withdrawal
+     
+  }
 
-  return await userScheme.update({ status });
+  // Update status and set endDate to today
+  return await userScheme.update({
+    status,
+    endDate: new Date()
+  });
 };
 
 export const updateUserSchemePoints = async (
@@ -282,4 +291,75 @@ export const updateCertificateDeliveryStatus = async (
   }
 
   return await userScheme.update({ certificate_delivered });
+};
+
+/**
+ * Converts available points to gold and adds to accrued_gold
+ * Resets available_points to 0
+ * Used by the monthly cron job
+ */
+export const convertPointsToAccruedGold = async () => {
+  try {
+    // Get point value setting (how many gold grams per point)
+    const pointConversionRate = await getSetting("point_conversion_rate");
+    if (!pointConversionRate) {
+      throw new Error("Point conversion rate setting not found");
+    }
+    
+    const pointConversionValue = await getSetting("point_conversion_value");
+    if (!pointConversionValue) {
+      throw new Error("Point conversion value setting not found");
+    }
+    
+    // Find all active user schemes with available points > 0
+    const userSchemes = await UserScheme.findAll({
+      where: {
+        status: "ACTIVE",
+        availablePoints: {
+          [Op.gt]: 0
+        }
+      }
+    });
+    
+    console.log(`Found ${userSchemes.length} user schemes with available points to convert`);
+    
+    const results = await Promise.all(
+      userSchemes.map(async (userScheme) => {
+        try {
+          // Calculate gold grams from available points
+          const goldGrams = (userScheme.availablePoints / parseInt(pointConversionRate)) * parseInt(pointConversionValue);
+          
+          // Update user scheme: add to accrued_gold, reset available_points
+          await userScheme.update({
+            accrued_gold: sequelize.literal(`COALESCE(accrued_gold, 0) + ${goldGrams}`),
+            availablePoints: 0
+          });
+          
+          return {
+            userSchemeId: userScheme.id,
+            pointsConverted: userScheme.availablePoints,
+            goldGramsAdded: goldGrams,
+            success: true
+          };
+        } catch (error) {
+          console.error(`Error converting points for user scheme ${userScheme.id}:`, error);
+          return {
+            userSchemeId: userScheme.id,
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+          };
+        }
+      })
+    );
+    
+    return {
+      total: userSchemes.length,
+      processed: results.filter(r => r.success).length,
+      failed: results.filter(r => !r.success).length,
+      details: results
+    };
+  } catch (error) {
+    console.error("Error in convertPointsToAccruedGold:", error);
+    throw error;
+  }
 }; 

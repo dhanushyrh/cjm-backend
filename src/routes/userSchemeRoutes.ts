@@ -168,7 +168,7 @@ router.get("/active/:userId/:schemeId", authenticateUser as RequestHandler, user
  *       401:
  *         description: Unauthorized
  */
-router.patch("/:userSchemeId/status", authenticateUser as RequestHandler, userSchemeController.updateUserSchemeStatus);
+router.patch("/:userSchemeId/status", authenticateAdmin as RequestHandler, userSchemeController.updateUserSchemeStatus);
 
 /**
  * @swagger

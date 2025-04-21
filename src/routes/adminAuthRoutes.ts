@@ -15,6 +15,7 @@ import {
 } from "../controllers/transactionController";
 import { updateCertificateDeliveryStatus } from "../controllers/userSchemeController";
 import { getDashboardStats } from "../services/dashboardService";
+import { triggerGoldAccrual } from "../controllers/adminRedemptionController";
 const router: Router = express.Router();
 
 /**
@@ -962,7 +963,7 @@ router.get("/schemes", authenticateAdmin as RequestHandler, fetchSchemes as Requ
 router.get("/scheme/:id", authenticateAdmin as RequestHandler, fetchSchemeById as RequestHandler);
 router.put("/scheme/:id", authenticateAdmin as RequestHandler, modifyScheme as RequestHandler);
 router.delete("/scheme/:id", authenticateAdmin as RequestHandler, removeScheme as RequestHandler);
-
+router.get('/accrued-gold', authenticateAdmin as RequestHandler, (triggerGoldAccrual as unknown) as RequestHandler);
 // Transaction Management
 /**
  * @swagger

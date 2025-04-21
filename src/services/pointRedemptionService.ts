@@ -193,7 +193,7 @@ export const approveRedemption = async (
     }
     const convienienceFee = await Settings.findOne({
       where: {
-        key: "convenienceFee",
+        key: "convenience_fee",
         is_deleted: false
       }
     });
