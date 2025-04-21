@@ -37,9 +37,7 @@ app.use(morgan(morganFormat, { stream: winstonStream }));
 // Configure CORS
 const corsOptions = {
   origin: [
-    'http://localhost:8080',
-    'http://localhost:3000',
-    'https://backend.hiranyajewellery.com'
+    '*'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
