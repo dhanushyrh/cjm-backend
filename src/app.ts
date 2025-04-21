@@ -39,7 +39,7 @@ const corsOptions = {
   origin: [
     'http://localhost:8080',
     'http://localhost:3000',
-    /\.ngrok-free\.app$/  // Allow all ngrok URLs
+    'https://backend.hiranyajewellery.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
