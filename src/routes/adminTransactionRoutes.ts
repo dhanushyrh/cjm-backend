@@ -1,5 +1,8 @@
 import express, { RequestHandler } from "express";
-import { listAllTransactions } from "../controllers/adminTransactionController";
+import { 
+  listAllTransactions,
+  createPointsTransactionsForAllActiveUsers 
+} from "../controllers/adminTransactionController";
 import { authenticateAdmin } from "../middleware/authMiddleware";
 
 const router = express.Router();
@@ -23,4 +26,13 @@ const router = express.Router();
  */
 router.get("/transactions", authenticateAdmin as RequestHandler, listAllTransactions as RequestHandler);
 
-export default router; 
+/**
+ * @route   POST /api/admin/bulk-points
+ * @desc    Create points transactions for all active user schemes
+ * @access  Private (Admin)
+ * @body    {number} points - Points to add to each active user scheme
+ * @body    {string} description - Description for the transaction
+ */
+router.post("/bulk-points", authenticateAdmin as RequestHandler, (createPointsTransactionsForAllActiveUsers as unknown) as RequestHandler);
+
+export default router;

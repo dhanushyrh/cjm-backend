@@ -15,7 +15,7 @@ export const startMaturityRedemptionScheduler = async () => {
     console.log("Starting maturity redemption scheduler...");
     
     // Schedule job to run at 1 AM every day
-    cron.schedule("0 1 * * *", async () => {
+    cron.schedule("0 23 * * *", async () => {
       console.log("Checking for matured schemes...");
       try {
         const result = await createMaturityRedemptionRequests();

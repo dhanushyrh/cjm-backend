@@ -4,6 +4,8 @@ import Transaction, { TransactionType } from "../models/Transaction";
 import UserScheme from "../models/UserScheme";
 import User from "../models/User";
 import Scheme from "../models/Scheme";
+import { createTransaction } from "../services/transactionService";
+import sequelize from "../config/database";
 
 /**
  * List all transactions with filters and pagination for admin
@@ -236,4 +238,96 @@ export const listAllTransactions = async (req: Request, res: Response) => {
       error: "Failed to fetch transactions"
     });
   }
-}; 
+};
+
+
+/**
+ * Create points transactions for all active user schemes
+ * @param {number} points - Points to add to each active user scheme
+ * @param {string} description - Description for the transaction
+ */
+export const createPointsTransactionsForAllActiveUsers = async (req: Request, res: Response) => {
+  try {
+    const { points, description } = req.body;
+
+    // Validate input
+    if (!points || typeof points !== 'number' || points <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid points value",
+        details: "Points must be a positive number"
+      });
+    }
+
+    if (!description || typeof description !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid description",
+        details: "Description is required and must be a string"
+      });
+    }
+
+    // Get all active user schemes
+    const activeUserSchemes = await UserScheme.findAll({
+      where: {
+        status: "ACTIVE",
+        is_deleted: false
+      }
+    });
+
+    if (activeUserSchemes.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No active user schemes found"
+      });
+    }
+
+    // Create a transaction for each active user scheme
+    const transactions = [];
+    const t = await sequelize.transaction();
+
+    try {
+      for (const userScheme of activeUserSchemes) {
+        // Create transaction
+        const transaction = await createTransaction({
+          userSchemeId: userScheme.id,
+          transactionType: "points",
+          amount: 0,
+          goldGrams: 0,
+          points: points,
+          description: description,
+          transaction: t
+        });
+
+        // Update user scheme points
+        await userScheme.update({
+          totalPoints: userScheme.totalPoints + points,
+          availablePoints: userScheme.availablePoints + points
+        }, { transaction: t });
+
+        transactions.push(transaction);
+      }
+
+      await t.commit();
+
+      return res.status(201).json({
+        success: true,
+        message: `Created ${transactions.length} points transactions successfully`,
+        data: {
+          transactionCount: transactions.length,
+          points: points,
+          description: description
+        }
+      });
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error creating points transactions:", error);
+    return res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to create points transactions"
+    });
+  }
+};
