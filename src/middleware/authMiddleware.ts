@@ -8,6 +8,9 @@ const ADMIN_SECRET_KEY = process.env.ADMIN_JWT_SECRET || "cjm_admin_secret_key";
 export interface AuthRequest extends Request {
   user?: any;
 }
+export interface AdminRequest extends Request {
+  admin?: any;
+}
 
 export const authenticateUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.header("Authorization")?.split(" ")[1];

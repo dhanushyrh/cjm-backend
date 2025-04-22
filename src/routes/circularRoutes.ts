@@ -1,7 +1,6 @@
 import { Router, RequestHandler } from "express";
 import * as circularController from "../controllers/circularController";
-import { authenticateUser } from "../middleware/authMiddleware";
-import { authenticateAdmin } from "../middleware/adminAuthMiddleware";
+import { authenticateUser, authenticateAdmin } from "../middleware/authMiddleware";
 
 const router = Router();
 

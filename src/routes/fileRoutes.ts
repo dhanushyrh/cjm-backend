@@ -1,6 +1,6 @@
 import express, { RequestHandler } from 'express';
 import * as fileController from '../controllers/fileController';
-import { authenticateAdmin } from '../middleware/adminAuthMiddleware';
+import { authenticateAdmin } from '../middleware/authMiddleware';
 
 const router = express.Router();
 

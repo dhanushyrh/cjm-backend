@@ -92,20 +92,20 @@ export const calculateAndAddBonusPoints = async (newPrice: GoldPrice, previousPr
   try {
     // First, mark any previous bonus transactions for this date as deleted
     // This handles the case when a gold price is updated for a specific date
-    await Transaction.update(
-      { is_deleted: true },
-      {
-        where: {
-          priceRefId: previousPrice.id,
-          transactionType: "points",
-          is_deleted: false
-        },
-        transaction: t
-      }
-    );
+    // await Transaction.update(
+    //   { is_deleted: true },
+    //   {
+    //     where: {
+    //       priceRefId: previousPrice.id,
+    //       transactionType: "points",
+    //       is_deleted: false
+    //     },
+    //     transaction: t
+    //   }
+    // );
     
-    // Adjust user scheme points for the deleted transactions
-    await adjustUserSchemePointsForDeletedTransactions(previousPrice.id, t);
+    // // Adjust user scheme points for the deleted transactions
+    // await adjustUserSchemePointsForDeletedTransactions(previousPrice.id, t);
     
     // Get bonus configuration from settings
     const [defaultBonusPoints, bonusModValue] = await Promise.all([

@@ -1,6 +1,6 @@
 import express, { RequestHandler } from 'express';
 import { getAnalyticsData } from '../controllers/analyticsController';
-import { authenticateAdmin } from '../middleware/adminAuthMiddleware';
+import { authenticateAdmin } from '../middleware/authMiddleware';
 
 const router = express.Router();
 

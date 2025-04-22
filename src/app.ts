@@ -22,6 +22,7 @@ import referralRoutes from "./routes/referralRoutes";
 import circularRoutes from "./routes/circularRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
 import { startGoldAccrualScheduler } from "./schedulers/goldAccrualScheduler";
+import { startMaturityRedemptionScheduler } from "./schedulers/maturityRedemptionScheduler";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { stream as winstonStream } from './config/winston';
@@ -36,9 +37,8 @@ app.use(morgan(morganFormat, { stream: winstonStream }));
 
 // Configure CORS
 const corsOptions = {
-  origin: [
-    '*'
-  ],
+  // Reflect request origin to support credentials
+  origin: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -81,5 +81,6 @@ app.get("/", async (req, res) => {
 // Start schedulers
 startPointsRecalculationScheduler();
 startGoldAccrualScheduler().catch(err => console.error("Failed to start gold accrual scheduler:", err));
+startMaturityRedemptionScheduler().catch(err => console.error("Failed to start maturity redemption scheduler:", err));
 
 export default app;

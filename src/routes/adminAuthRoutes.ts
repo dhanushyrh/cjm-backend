@@ -1,7 +1,5 @@
 import express, { Router, RequestHandler } from "express";
 import { registerAdmin, loginAdmin, registerUser } from "../controllers/adminAuthController";
-import { authenticateAdmin } from "../middleware/adminAuthMiddleware";
-import { AdminRequest } from "../middleware/adminAuthMiddleware";
 import { fetchUsers, updateUserStatus, searchUserByUserId, fetchUserById, updateUserDetailsController } from "../controllers/userController";
 import { removeUser } from "../controllers/userController";
 import { addScheme, fetchSchemes, fetchSchemeById, modifyScheme, removeScheme } from "../controllers/schemeController";
@@ -16,6 +14,7 @@ import {
 import { updateCertificateDeliveryStatus } from "../controllers/userSchemeController";
 import { getDashboardStats } from "../services/dashboardService";
 import { triggerGoldAccrual } from "../controllers/adminRedemptionController";
+import { AdminRequest, authenticateAdmin } from "../middleware/authMiddleware";
 const router: Router = express.Router();
 
 /**

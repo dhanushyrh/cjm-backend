@@ -7,6 +7,7 @@ import Transaction from "../models/Transaction";
 import db from "../config/database";
 import User from "../models/User";
 import Scheme from "../models/Scheme";
+import GoldPrice from "../models/GoldPrice";
 
 interface RedemptionEligibility {
   isEligible: boolean;
@@ -183,24 +184,23 @@ export const approveRedemption = async (
   const t = await db.transaction();
 
   try {
-    const request = await RedemptionRequest.findByPk(requestId, { transaction: t });
-    if (!request || !request.points) {
-      throw new Error("Redemption request not found or invalid points");
+    const request = await RedemptionRequest.findByPk(requestId, {
+      include: [
+        {
+          model: UserScheme,
+          as: "userScheme"
+        }
+      ],
+      transaction: t
+    });
+    
+    if (!request) {
+      throw new Error("Redemption request not found");
     }
 
     if (request.status !== "PENDING") {
       throw new Error("Can only process pending requests");
     }
-    const convienienceFee = await Settings.findOne({
-      where: {
-        key: "convenience_fee",
-        is_deleted: false
-      }
-    });
-    if (!convienienceFee) {
-      throw new Error("Convenience fee not found");
-    }
-    const convienienceFeeValue = convienienceFee.value ? parseFloat(convienienceFee.value) : 0;
     
     // Update request status
     await request.update(
@@ -214,42 +214,103 @@ export const approveRedemption = async (
     );
 
     if (status === "APPROVED") {
-      // Create bonus withdrawal transaction
-      await createTransaction({
-        userSchemeId: request.userSchemeId,
-        transactionType: "bonus_withdrawal",
-        amount: 0, // No amount for bonus withdrawals
-        goldGrams: 0,
-        points: -request.points, // Negative points for withdrawal
-        redeemReqId: requestId
-      });
-
-      await createTransaction({
-        userSchemeId: request.userSchemeId,
-        transactionType: "convenience_fee",
-        amount: 0, // No amount for bonus withdrawals
-        goldGrams: 0,
-        description: `Convenience fee of ${convienienceFeeValue} points deducted for redemption`,
-        points: -convienienceFeeValue, // Negative points for withdrawal
-        redeemReqId: requestId
-      });
-
-      // Update user scheme points
-      await UserScheme.decrement(
-        { availablePoints: request.points + convienienceFeeValue },
-        { 
-          where: { id: request.userSchemeId },
-          transaction: t 
+      if (request.type === "BONUS") {
+        if (!request.points) {
+          throw new Error("Invalid points for BONUS redemption");
         }
-      );
+        
+        const convienienceFee = await Settings.findOne({
+          where: {
+            key: "convenience_fee",
+            is_deleted: false
+          }
+        });
+        
+        if (!convienienceFee) {
+          throw new Error("Convenience fee not found");
+        }
+        
+        const convienienceFeeValue = convienienceFee.value ? parseFloat(convienienceFee.value) : 0;
+        
+        // Create bonus withdrawal transaction
+        await createTransaction({
+          userSchemeId: request.userSchemeId,
+          transactionType: "bonus_withdrawal",
+          amount: 0, // No amount for bonus withdrawals
+          goldGrams: 0,
+          points: -request.points, // Negative points for withdrawal
+          redeemReqId: requestId
+        });
+
+        await createTransaction({
+          userSchemeId: request.userSchemeId,
+          transactionType: "convenience_fee",
+          amount: 0, // No amount for bonus withdrawals
+          goldGrams: 0,
+          description: `Convenience fee of ${convienienceFeeValue} points deducted for redemption`,
+          points: -convienienceFeeValue, // Negative points for withdrawal
+          redeemReqId: requestId
+        });
+
+        // Update user scheme points
+        await UserScheme.decrement(
+          { availablePoints: request.points + convienienceFeeValue },
+          { 
+            where: { id: request.userSchemeId },
+            transaction: t 
+          }
+        );
+      } else if (request.type === "MATURITY") {
+        // For MATURITY type, mark the UserScheme as COMPLETE
+        await UserScheme.update(
+          { status: "COMPLETED" },
+          { 
+            where: { id: request.userSchemeId },
+            transaction: t 
+          }
+        );
+        
+        // Create maturity withdrawal transaction
+        const userScheme = request.userScheme;
+        if (!userScheme) {
+          throw new Error("User scheme not found");
+        }
+        
+        const schemeGrams = userScheme.scheme?.goldGrams || 0;
+        const accruedGold = userScheme.accrued_gold || 0;
+        const totalGold = Number(schemeGrams) + Number(accruedGold);
+        
+        // Get current gold price for transaction amount calculation
+        const currentGoldPrice = await GoldPrice.findOne({
+          where: { is_deleted: false },
+          order: [["date", "DESC"]],
+          transaction: t
+        });
+        
+        if (!currentGoldPrice) {
+          throw new Error("Current gold price not found");
+        }
+        
+        const amount = totalGold * Number(currentGoldPrice.pricePerGram);
+        
+        await createTransaction({
+          userSchemeId: request.userSchemeId,
+          transactionType: "withdrawal",
+          amount: amount,
+          goldGrams: totalGold,
+          points: 0,
+          priceRefId: currentGoldPrice.id,
+          redeemReqId: requestId,
+          description: `Maturity redemption of ${totalGold.toFixed(2)} grams of gold (${schemeGrams} scheme grams + ${accruedGold.toFixed(2)} accrued gold)`
+        });
+      }
     } else if (status === "REJECTED") {
-      // Soft delete any existing bonus withdrawal transaction
+      // Soft delete any existing withdrawal transaction
       await Transaction.update(
         { is_deleted: true },
         {
           where: {
             redeemReqId: requestId,
-            transactionType: "bonus_withdrawal",
             is_deleted: false
           },
           transaction: t

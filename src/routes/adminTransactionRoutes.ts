@@ -1,6 +1,6 @@
 import express, { RequestHandler } from "express";
 import { listAllTransactions } from "../controllers/adminTransactionController";
-import { authenticateAdmin } from "../middleware/adminAuthMiddleware";
+import { authenticateAdmin } from "../middleware/authMiddleware";
 
 const router = express.Router();
 

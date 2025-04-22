@@ -22,18 +22,7 @@ const options: swaggerJsdoc.Options = {
           bearerFormat: 'JWT',
         },
       },
-    },
-    tags: [
-      // { name: 'Auth', description: 'Authentication endpoints' },
-      // { name: 'Admin Auth', description: 'Admin authentication endpoints' },
-      // { name: 'Users', description: 'User management endpoints' },
-      // { name: 'Schemes', description: 'Scheme management endpoints' },
-      // { name: 'Gold Price', description: 'Gold price management endpoints' },
-      // { name: 'Transactions', description: 'Transaction management endpoints' },
-      // { name: 'Point Redemption', description: 'Point redemption endpoints' },
-      // { name: 'Admin Redemption', description: 'Admin redemption management endpoints' },
-      // { name: 'Settings', description: 'System settings endpoints' },
-    ],
+    }
   },
   apis: ['./src/routes/*.ts', './src/models/*.ts'],
 };

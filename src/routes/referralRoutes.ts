@@ -5,8 +5,7 @@ import {
   getReferralList,
   getReferralDetail
 } from "../controllers/referralController";
-import { authenticateUser } from "../middleware/authMiddleware";
-import { authenticateAdmin } from "../middleware/adminAuthMiddleware";
+import { authenticateUser, authenticateAdmin } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
