@@ -385,7 +385,7 @@ export const getUserRedemptionRequests = async (
   
   // Find all userSchemes for this user
   const userSchemes = await UserScheme.findAll({
-    where: { userId, is_deleted: false },
+    where: { userId, status: 'ACTIVE' },
     attributes: ['id']
   });
   

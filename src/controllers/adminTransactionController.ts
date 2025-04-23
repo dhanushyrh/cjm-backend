@@ -271,7 +271,6 @@ export const createPointsTransactionsForAllActiveUsers = async (req: Request, re
     const activeUserSchemes = await UserScheme.findAll({
       where: {
         status: "ACTIVE",
-        is_deleted: false
       }
     });
 

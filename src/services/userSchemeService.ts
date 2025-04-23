@@ -113,6 +113,7 @@ export const createUserScheme = async (
       availablePoints: joinBonusPoints,
       status: options?.status || "ACTIVE",
       desired_item: desired_item || null,
+      accrued_gold: 0,
       payment_details_id: paymentDetailsRecord ? paymentDetailsRecord.id : null
     }, { transaction: t })
     .catch(err => {

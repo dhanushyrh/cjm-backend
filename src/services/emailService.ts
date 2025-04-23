@@ -1,19 +1,25 @@
-import  nodemailer from 'nodemailer';
+import Nodemailer from "nodemailer";
+import { MailtrapTransport } from "mailtrap"
 import dotenv from 'dotenv';
 
 
 dotenv.config();
 
 // Create a nodemailer transporter using SMTP credentials
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
+const transport = Nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'sandbox.smtp.mailtrap.io',
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: process.env.SMTP_SECURE === 'true',
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
+    user: process.env.SMTP_USER || 'dfc4bfa4ce9706',
+    pass: process.env.SMTP_PASSWORD || '63af84d7072062',
   },
 });
+
+// const transport = Nodemailer.createTransport(MailtrapTransport({
+//   token: process.env.MAILTRAP_TOKEN || '4033cf2358cd1244be65cce3d7fd2baa',
+//   testInboxId: 3628227,
+// }))
 
 export interface EmailOptions {
   to: string;
@@ -32,7 +38,7 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
       html: options.html || options.text
     };
     
-    await transporter.sendMail(msg);
+    await transport.sendMail(msg);
     console.log(`Email sent to ${options.to}`);
 
   } catch (error) {
