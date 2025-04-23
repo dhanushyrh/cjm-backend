@@ -1,4 +1,5 @@
-import { Op, Transaction } from "sequelize";
+import { Op } from "sequelize";
+import sequelize from "../config/database";
 import UserScheme, { UserSchemeStatus } from "../models/UserScheme";
 import User from "../models/User";
 import Scheme from "../models/Scheme";
@@ -6,7 +7,7 @@ import Settings from "../models/Settings";
 import PaymentDetails from "../models/PaymentDetails";
 import { addMonths } from "date-fns";
 import { createInitialDeposit, createTransaction } from "./transactionService";
-import sequelize from "../config/database";
+import { Transaction as SequelizeTransaction } from "sequelize";
 import { TransactionType } from "../models/Transaction";
 import { getSetting } from "./settingsService";
 
@@ -33,7 +34,7 @@ export interface UserSchemeOptions {
 export const createUserScheme = async (
   userId: string,
   schemeId: string,
-  transaction?: Transaction,
+  transaction?: SequelizeTransaction,
   desired_item?: string,
   paymentInfo?: PaymentInfoType,
   options?: UserSchemeOptions
@@ -220,15 +221,44 @@ export const getActiveUserScheme = async (userId: string, schemeId: string) => {
 
 export const updateUserSchemeStatus = async (
   userSchemeId: string,
-  status: UserSchemeStatus
+  status: UserSchemeStatus,
+  amount?: number,
+  description?: string
 ) => {
-  const userScheme = await UserScheme.findByPk(userSchemeId);
+  const userScheme = await UserScheme.findByPk(userSchemeId, {
+    include: [
+      {
+        model: Scheme,
+        as: "scheme"
+      }
+    ]
+  });
+  
   if (!userScheme) {
     throw new Error("User scheme not found");
   }
+  
   if (status === "WITHDRAWN") {
-     // create a redeem request for the withdrawal
-     
+    // Create a withdrawal transaction 
+    if (!userScheme.scheme) {
+      throw new Error("Scheme details not found");
+    }
+
+    // Use the provided amount or 0 as default
+    const transactionAmount = amount || 0;
+    // Use scheme's gold grams
+    const goldGrams = userScheme.scheme.goldGrams;
+    // Use provided description or default
+    const transactionDescription = description || `Withdrawal from scheme ${userScheme.scheme.name}`;
+
+    await createTransaction({
+      userSchemeId,
+      transactionType: "withdrawal",
+      amount: transactionAmount,
+      goldGrams: goldGrams,
+      points: 0,
+      description: transactionDescription
+    });
   }
 
   // Update status and set endDate to today

@@ -137,7 +137,7 @@ export const getActiveUserScheme = async (req: Request, res: Response): Promise<
 export const updateUserSchemeStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userSchemeId } = req.params;
-    const { status } = req.body;
+    const { status, amount, description } = req.body;
     
     if (!userSchemeId) {
       res.status(400).json({
@@ -155,7 +155,30 @@ export const updateUserSchemeStatus = async (req: Request, res: Response): Promi
       return;
     }
     
-    const updatedScheme = await userSchemeService.updateUserSchemeStatus(userSchemeId, status);
+    // Validate amount is a number if provided
+    if (amount !== undefined && (typeof amount !== 'number' || amount < 0)) {
+      res.status(400).json({
+        success: false,
+        message: "Amount must be a positive number"
+      });
+      return;
+    }
+    
+    // Validate description is a string if provided
+    if (description !== undefined && typeof description !== 'string') {
+      res.status(400).json({
+        success: false,
+        message: "Description must be a string"
+      });
+      return;
+    }
+    
+    const updatedScheme = await userSchemeService.updateUserSchemeStatus(
+      userSchemeId, 
+      status, 
+      amount, 
+      description
+    );
     
     res.status(200).json({
       success: true,
