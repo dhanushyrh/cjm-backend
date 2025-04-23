@@ -58,17 +58,29 @@ export const getAnalytics = async () => {
   const totalTransactions = await Transaction.count();
   
   // Calculate totalAmount separately
-  const totalAmount = await Transaction.sum('amount', { 
+  const totalAmount = (await Transaction.sum('amount', { 
     where: { 
+      transactionType: 'deposit',
       is_deleted: false 
     } 
-  }) || 0;
+  }) || 0) - (await Transaction.sum('amount', { 
+    where: { 
+      transactionType: 'withdrawal',
+      is_deleted: false 
+    } 
+  }) || 0);
 
-  const totalGoldGrams = await Transaction.sum('goldGrams', { 
+  const totalGoldGrams = (await Transaction.sum('goldGrams', { 
     where: { 
+      transactionType: 'deposit',
       is_deleted: false 
     } 
-  }) || 0;
+  }) || 0) - (await Transaction.sum('goldGrams', { 
+    where: { 
+      transactionType: 'withdrawal',
+      is_deleted: false 
+    } 
+  }) || 0)
   
   const totalPoints = await Transaction.sum('points', { 
     where: { 

@@ -1,6 +1,7 @@
 import User from "../models/User";
 import Scheme from "../models/Scheme";
 import UserScheme from "../models/UserScheme";
+import PaymentDetails from "../models/PaymentDetails";
 
 export interface PaginationResult<T> {
   data: T[];
@@ -119,6 +120,11 @@ export const getUserById = async (id: string): Promise<User | null> => {
           {
             model: Scheme,
             as: "scheme",
+            required: false
+          },
+          {
+            model: PaymentDetails,
+            as: "paymentDetails",
             required: false
           }
         ]
