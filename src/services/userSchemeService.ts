@@ -192,6 +192,10 @@ export const getUserSchemes = async (userId: string) => {
       {
         model: Scheme,
         as: "scheme"
+      },
+      {
+        model: require("../models/Transaction").default,
+        as: "transactions"
       }
     ],
     order: [["createdAt", "DESC"]]
@@ -363,4 +367,4 @@ export const convertPointsToAccruedGold = async () => {
     console.error("Error in convertPointsToAccruedGold:", error);
     throw error;
   }
-}; 
+};

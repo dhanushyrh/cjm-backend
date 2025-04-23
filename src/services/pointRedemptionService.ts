@@ -140,6 +140,18 @@ export const createRedemptionRequest = async (
   transaction?: SequelizeTransaction
 ): Promise<RedemptionRequest> => {
   try {
+    // Prevent duplicate pending BONUS redemption requests for this user scheme
+    const existingRequest = await RedemptionRequest.findOne({
+      where: {
+        userSchemeId,
+        status: "PENDING",
+        type: "BONUS",
+        is_deleted: false
+      }
+    });
+    if (existingRequest) {
+      throw new Error("There is already a pending redemption request for this user scheme");
+    }
     // Check if within redemption window
     const { isWithin, maxDay } = await isWithinRedemptionWindow();
     if (!isWithin) {
