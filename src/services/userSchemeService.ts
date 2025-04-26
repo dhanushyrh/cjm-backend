@@ -372,14 +372,21 @@ export const convertPointsToAccruedGold = async () => {
 
           // Ensure numeric addition by parsing accrued_gold (string) to number
           const existingAccrued = userScheme.accrued_gold
-            ? parseFloat(userScheme.accrued_gold.toString())
+            ? Number(userScheme.accrued_gold.toString())
             : 0;
           const updatedAccrued = existingAccrued + goldGrams;
           await userScheme.update({
             accrued_gold: updatedAccrued,
             availablePoints: 0
           });
-          
+          await createTransaction({
+            userSchemeId: userScheme.id,
+            transactionType: "converted_to_accrued_gold",
+            amount: 0, // No amount for bonus points
+            goldGrams: goldGrams, // No gold grams for bonus points
+            points: -existingPoints,
+            description: `Points converted ${existingPoints} to gold grams ${goldGrams}`
+          });
           return {
             userSchemeId: userScheme.id,
             pointsConverted: existingPoints,
