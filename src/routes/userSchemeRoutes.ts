@@ -356,6 +356,35 @@ router.patch("/:userSchemeId/desired-item", authenticateUser as RequestHandler, 
 
 /**
  * @swagger
+ * /api/user-schemes/convert-points-to-gold:
+ *   post:
+ *     tags: [User Schemes]
+ *     summary: Manually trigger conversion of available points to accrued gold
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Conversion result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Server error
+ */
+router.post("/convert-points-to-gold", authenticateAdmin as RequestHandler, userSchemeController.triggerConvertPointsToAccruedGold);
+
+/**
+ * @swagger
  * components:
  *   schemas:
  *     UserScheme:

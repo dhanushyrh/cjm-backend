@@ -374,4 +374,14 @@ export const updateCertificateDeliveryStatus = async (req: Request, res: Respons
       message: error instanceof Error ? error.message : "Failed to update certificate delivery status"
     });
   }
+};
+
+export const triggerConvertPointsToAccruedGold = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await userSchemeService.convertPointsToAccruedGold();
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    console.error("Error triggering points to gold conversion:", error);
+    res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Failed to convert points to gold" });
+  }
 }; 

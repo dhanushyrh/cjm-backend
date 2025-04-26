@@ -165,12 +165,12 @@ export const getGoldPriceGraph = async (req: Request, res: Response) => {
       });
     }
 
-    const graphData = await getLastNDaysGoldPrices(days);
-
+    const graphData = await getLastNDaysGoldPrices(days);    
     // Add summary statistics
     const summary = {
       totalDays: graphData.data.length,
       currentPrice: graphData.data[graphData.data.length - 1]?.pricePerGram || 0,
+      yesterdaysPrice: graphData.data[graphData.data.length - 2]?.pricePerGram || 0,
       lowestPrice: Math.min(...graphData.data.map(d => d.pricePerGram)),
       highestPrice: Math.max(...graphData.data.map(d => d.pricePerGram)),
       overallChange: graphData.data.length > 1 

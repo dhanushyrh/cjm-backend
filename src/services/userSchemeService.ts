@@ -10,6 +10,7 @@ import { createInitialDeposit, createTransaction } from "./transactionService";
 import { Transaction as SequelizeTransaction } from "sequelize";
 import { TransactionType } from "../models/Transaction";
 import { getSetting } from "./settingsService";
+import e from "express";
 
 export interface PaymentInfoType {
   payment_mode: string;
@@ -357,22 +358,31 @@ export const convertPointsToAccruedGold = async () => {
     });
     
     console.log(`Found ${userSchemes.length} user schemes with available points to convert`);
+    console.log(`Point conversion rate: ${pointConversionRate}`);
+    console.log(`Point conversion value: ${pointConversionValue}`);
     
     const results = await Promise.all(
       userSchemes.map(async (userScheme) => {
         try {
+          let existingPoints = userScheme.availablePoints;
           // Calculate gold grams from available points
-          const goldGrams = (userScheme.availablePoints / parseInt(pointConversionRate)) * parseInt(pointConversionValue);
-          
-          // Update user scheme: add to accrued_gold, reset available_points
+          let goldGrams = (userScheme.availablePoints / parseInt(pointConversionRate));
+          console.log(`User scheme ${userScheme.id} - Gold grams: ${goldGrams} - Point conversion rate: ${pointConversionRate}`);
+          goldGrams = (goldGrams * Number(pointConversionValue));
+
+          // Ensure numeric addition by parsing accrued_gold (string) to number
+          const existingAccrued = userScheme.accrued_gold
+            ? parseFloat(userScheme.accrued_gold.toString())
+            : 0;
+          const updatedAccrued = existingAccrued + goldGrams;
           await userScheme.update({
-            accrued_gold: sequelize.literal(`COALESCE(accrued_gold, 0) + ${goldGrams}`),
+            accrued_gold: updatedAccrued,
             availablePoints: 0
           });
           
           return {
             userSchemeId: userScheme.id,
-            pointsConverted: userScheme.availablePoints,
+            pointsConverted: existingPoints,
             goldGramsAdded: goldGrams,
             success: true
           };
