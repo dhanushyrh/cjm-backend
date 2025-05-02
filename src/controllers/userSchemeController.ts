@@ -374,7 +374,7 @@ export const updateCertificateDeliveryStatus = async (req: Request, res: Respons
       message: error instanceof Error ? error.message : "Failed to update certificate delivery status"
     });
   }
-};
+}; 
 
 export const triggerConvertPointsToAccruedGold = async (req: Request, res: Response): Promise<void> => {
   try {

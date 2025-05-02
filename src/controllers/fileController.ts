@@ -265,4 +265,62 @@ export const getFileAccessUrl = async (req: Request, res: Response): Promise<voi
       message: error.message || 'Failed to generate file access URL'
     });
   }
+};
+
+// Get a signed URL for accessing a file for regular users
+export const getUserFileAccessUrl = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { fileId } = req.params;
+    const { expiresIn } = req.query;
+    const userId = (req as any).user.id; // Get the authenticated user's ID
+    
+    // Validate fileId
+    if (!fileId) {
+      res.status(400).json({
+        success: false,
+        message: 'File ID is required'
+      });
+      return;
+    }
+    
+    // Get the file from database
+    const file = await fileService.getFileById(fileId);
+    
+    if (!file) {
+      res.status(404).json({
+        success: false,
+        message: 'File not found'
+      });
+      return;
+    }
+
+    // Check if the file belongs to the authenticated user
+    if (file.userId && file.userId !== userId) {
+      res.status(403).json({
+        success: false,
+        message: 'You are not authorized to access this file'
+      });
+      return;
+    }
+    
+    // Generate signed URL with optional expiration time
+    const expiration = expiresIn ? parseInt(expiresIn as string) : undefined;
+    const signedUrl = await getSignedReadUrl(file.path, expiration);
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        fileId: file.id,
+        filename: file.filename,
+        mimeType: file.mimeType,
+        signedUrl
+      }
+    });
+  } catch (error: any) {
+    console.error('Error generating file access URL for user:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate file access URL'
+    });
+  }
 }; 

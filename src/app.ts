@@ -20,6 +20,8 @@ import fileRoutes from "./routes/fileRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import referralRoutes from "./routes/referralRoutes";
 import circularRoutes from "./routes/circularRoutes";
+import schemeRequestRoutes from "./routes/schemeRequestRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
 import { startGoldAccrualScheduler } from "./schedulers/goldAccrualScheduler";
 import { startMaturityRedemptionScheduler } from "./schedulers/maturityRedemptionScheduler";
@@ -65,6 +67,8 @@ app.use("/api/files", fileRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/referrals", referralRoutes);
 app.use("/api/circulars", circularRoutes);
+app.use("/api/scheme-requests", schemeRequestRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Swagger documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

@@ -1,6 +1,6 @@
 import express, { RequestHandler } from 'express';
 import * as fileController from '../controllers/fileController';
-import { authenticateAdmin } from '../middleware/authMiddleware';
+import { authenticateAdmin, authenticateUser } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -313,5 +313,64 @@ router.delete('/:fileId', authenticateAdmin as RequestHandler, fileController.de
  *         description: Server error
  */
 router.get('/access/:fileId', authenticateAdmin as RequestHandler, fileController.getFileAccessUrl);
+
+/**
+ * @swagger
+ * /api/files/user-access/{fileId}:
+ *   get:
+ *     tags: [Files]
+ *     summary: Get a signed URL for accessing a file for regular users
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: fileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The ID of the file to access
+ *       - in: query
+ *         name: expiresIn
+ *         schema:
+ *           type: integer
+ *           minimum: 60
+ *           maximum: 86400
+ *           default: 3600
+ *         description: URL expiration time in seconds (default 1 hour, max 24 hours)
+ *     responses:
+ *       200:
+ *         description: Signed URL generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     fileId:
+ *                       type: string
+ *                       format: uuid
+ *                     filename:
+ *                       type: string
+ *                     mimeType:
+ *                       type: string
+ *                     signedUrl:
+ *                       type: string
+ *                       description: Temporary signed URL for accessing the file
+ *       400:
+ *         description: Invalid request parameters
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: File not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/user-access/:fileId', authenticateUser as RequestHandler, fileController.getUserFileAccessUrl);
 
 export default router; 

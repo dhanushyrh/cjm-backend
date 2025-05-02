@@ -4,6 +4,7 @@ import UserScheme from "../models/UserScheme";
 import Scheme from "../models/Scheme";
 import User from "../models/User";
 import GoldPrice from "../models/GoldPrice";
+import { createNotification } from "./notificationService";
 
 interface CreateTransactionParams {
   userSchemeId: string;
@@ -93,6 +94,69 @@ export const createTransaction = async (params: CreateTransactionParams): Promis
     description,
     is_deleted: false
   }, { transaction });
+
+  try {
+    // Get the user ID from userScheme to send notification
+    const userScheme = await UserScheme.findByPk(userSchemeId, {
+      include: [{ model: User, as: "user" }],
+      transaction
+    });
+    
+    if (userScheme && userScheme.user) {
+      const userId = userScheme.user.id;
+      let title = "";
+      let message = "";
+      let notificationType: "BONUS" | "INFO" = "INFO";
+      let comments = description || "";
+      // Set notification content based on transaction type
+      switch (transactionType) {
+        case "deposit":
+          title = "Deposit Received";
+          message = `Your deposit of ₹${amount.toFixed(2)} (${goldGrams}g gold) has been processed.`;
+          notificationType = "INFO";
+          break;
+        case "withdrawal":
+          title = "Withdrawal Processed";
+          message = `Your withdrawal of ₹${amount.toFixed(2)} (${goldGrams}g gold) has been processed.`;
+          notificationType = "INFO";
+          break;
+        case "points":
+          title = "Points Awarded";
+          message = `You have received ${points} points! ${description}`;
+          notificationType = "BONUS";
+          break;
+        case "bonus_withdrawal":
+          title = "Bonus Redeemed";
+          message = `Your redemption of ${Math.abs(points)} points has been processed.`;
+          notificationType = "INFO";
+          break;
+        default:
+          title = "Transaction Completed";
+          notificationType = "INFO";
+          message = description || `A ${transactionType} transaction has been completed.`;
+      }
+      
+      // Create a notification in a non-blocking way (don't await)
+      createNotification(
+        userId,
+        notificationType,
+        title,
+        message,
+        comments,
+        null,
+        {
+          transactionId: newTransaction.id,
+          transactionType,
+          amount,
+          goldGrams,
+          points
+        }
+      ).catch(err => console.error("Failed to create transaction notification:", err));
+    }
+  } catch (error) {
+    // Log but don't fail the transaction if notification creation fails
+    console.error("Error creating notification for transaction:", error);
+  }
 
   return newTransaction;
 };

@@ -179,7 +179,7 @@ export const calculateAndAddBonusPoints = async (newPrice: GoldPrice, previousPr
             goldGrams: 0, // No gold grams for bonus points
             points: schemePoints,
             priceRefId: newPrice.id, // Add reference to the gold price
-            description: `Bonus points awarded for gold price ${priceDifference > 0 ? 'increase' : 'maintenance'} of ₹${Math.abs(priceDifference).toFixed(2)} per gram`,
+            description: `Bonus points awarded for gold price ${priceDifference > 0 ? 'increase' : 'decrease'} of ₹${Math.abs(priceDifference).toFixed(2)} per gram`,
             transaction: t
           });
 

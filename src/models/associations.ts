@@ -9,6 +9,10 @@ import PaymentDetails from "./PaymentDetails";
 import Referral from "./Referral";
 import Circular from "./Circular";
 import CircularView from "./CircularView";
+import Settings from "./Settings";
+import File from "./File";
+import SchemeRequest from "./SchemeRequest";
+import Notification from "./Notification";
 
 export const setupAssociations = () => {
   // User <-> UserScheme associations
@@ -105,5 +109,27 @@ export const setupAssociations = () => {
   CircularView.belongsTo(User, {
     foreignKey: "userId",
     as: "user"
+  });
+
+  // Scheme Request associations
+  SchemeRequest.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  User.hasMany(SchemeRequest, {
+    foreignKey: "userId",
+    as: "schemeRequests",
+  });
+
+  // Notification associations
+  Notification.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  User.hasMany(Notification, {
+    foreignKey: "userId",
+    as: "notifications",
   });
 }; 
