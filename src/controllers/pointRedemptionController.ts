@@ -81,13 +81,13 @@ export const redeemUserPoints = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if within redemption window
-    const { isWithin, maxDay } = await isWithinRedemptionWindow();
-    if (!isWithin) {
-      return res.status(400).json({
-        success: false,
-        message: `Redemption requests must be made within the first ${maxDay} days of each month.`
-      });
-    }
+    // const { isWithin, maxDay } = await isWithinRedemptionWindow();
+    // if (!isWithin) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: `Redemption requests must be made within the first ${maxDay} days of each month.`
+    //   });
+    // }
 
     // Verify user owns this scheme
     const userScheme = await UserScheme.findOne({

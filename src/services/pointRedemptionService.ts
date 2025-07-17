@@ -52,16 +52,16 @@ export const isWithinRedemptionWindow = async (): Promise<{isWithin: boolean, ma
 export const checkRedemptionEligibility = async (userSchemeId: string): Promise<RedemptionEligibility> => {
   try {
     // Check if within redemption window
-    const { isWithin, maxDay } = await isWithinRedemptionWindow();
+    // const { isWithin, maxDay } = await isWithinRedemptionWindow();
     
-    if (!isWithin) {
-      return {
-        isEligible: false,
-        reason: `Redemption requests must be made within the first ${maxDay} days of each month.`,
-        availablePoints: 0,
-        minimumPoints: 0
-      };
-    }
+    // if (!isWithin) {
+    //   return {
+    //     isEligible: false,
+    //     reason: `Redemption requests must be made within the first ${maxDay} days of each month.`,
+    //     availablePoints: 0,
+    //     minimumPoints: 0
+    //   };
+    // }
     
     // Get minimum points requirement from settings
     const minPointsSetting = await Settings.findOne({
@@ -153,10 +153,10 @@ export const createRedemptionRequest = async (
       throw new Error("There is already a pending redemption request for this user scheme");
     }
     // Check if within redemption window
-    const { isWithin, maxDay } = await isWithinRedemptionWindow();
-    if (!isWithin) {
-      throw new Error(`Redemption requests must be made within the first ${maxDay} days of each month.`);
-    }
+    // const { isWithin, maxDay } = await isWithinRedemptionWindow();
+    // if (!isWithin) {
+    //   throw new Error(`Redemption requests must be made within the first ${maxDay} days of each month.`);
+    // }
     
     // Check eligibility
     const eligibility = await checkRedemptionEligibility(userSchemeId);
@@ -250,7 +250,7 @@ export const approveRedemption = async (
           transactionType: "bonus_withdrawal",
           amount: 0, // No amount for bonus withdrawals
           goldGrams: 0,
-          points: -request.points, // Negative points for withdrawal
+          points: -(request.points - convienienceFeeValue), // Negative points for withdrawal
           redeemReqId: requestId
         });
 
