@@ -1,168 +1,100 @@
 # CJM Backend
 
-Backend service for the Customer Jewelry Management (CJM) platform.
+REST API for the Hiranya gold savings platform. Serves [gold-gaze-mobile-hub](../gold-gaze-mobile-hub/) (customers) and [goldkeeper-dashboard](../goldkeeper-dashboard/) (admins).
 
-## Features
+Part of the [Hiranya workspace](../README.md).
 
-- User authentication and management
-- Gold price tracking and statistics
-- User scheme management
-- Transaction handling
-- Point redemption system
-- Circulars/announcements with view tracking
-- Admin dashboard and analytics
-- File management
-- Comprehensive logging system
+## Documentation
 
-## Tech Stack
+| Resource | Description |
+|----------|-------------|
+| [Wiki: cjm-backend](../wiki/projects/cjm-backend.md) | Architecture, services, extension points |
+| [API contract](../wiki/architecture/api-contract.md) | All routes (authoritative) |
+| [Data model](../wiki/architecture/data-model.md) | Sequelize models / Postgres tables |
+| [Background jobs](../wiki/concepts/background-jobs.md) | Cron schedulers |
+| [Local development](../wiki/guides/local-development.md) | Full-stack setup |
+| [Known gaps](../wiki/guides/known-gaps.md) | API mismatches with frontends |
 
-- Node.js and Express
-- TypeScript
-- PostgreSQL with Sequelize ORM
-- JWT for authentication
-- Winston and Morgan for logging
-- Swagger for API documentation
-- Jest for testing
+**For AI agents:** [`../wiki/index.md`](../wiki/index.md) · [`../AGENTS.md`](../AGENTS.md)
 
-## Prerequisites
+## Tech stack
 
-- Node.js 18.x or higher
-- PostgreSQL 13.x or higher
-- npm or yarn package manager
+- Node.js, Express 4, TypeScript
+- PostgreSQL + Sequelize ORM
+- JWT (separate user/admin secrets)
+- AWS S3, SendGrid email
+- node-cron schedulers
+- Swagger at `/docs`
 
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/cjm-backend.git
-   cd cjm-backend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file in the root directory with the following variables:
-   ```
-   # Server
-   PORT=3000
-   NODE_ENV=development
-   
-   # Database
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_NAME=cjm_dev
-   DB_USER=postgres
-   DB_PASSWORD=yourpassword
-   
-   # JWT
-   JWT_SECRET=your-secret-key
-   JWT_EXPIRES_IN=7d
-   
-   # Logging
-   LOG_DIR=logs
-   ```
-
-4. Run database migrations:
-   ```bash
-   npm run migrate
-   ```
-
-## Running the Application
-
-### Development Mode
-
-Start the application in development mode with hot reloading:
+## Quick start
 
 ```bash
-npm run dev
+npm install
+# Create .env — see README env table below
+npm run dev    # http://localhost:5000
 ```
 
-### Production Mode
+Swagger: http://localhost:5000/docs
 
-Build and run the application in production mode:
+## Environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| `PORT` | Server port (default 5000) |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Postgres |
+| `JWT_SECRET` | Customer JWT |
+| `ADMIN_JWT_SECRET` | Admin JWT |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET_NAME` | S3 uploads |
+| `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL` | Email |
+| `FRONTEND_URL` | Reset-password link base |
+
+## Project structure
+
+```
+src/
+├── app.ts           # Routes + schedulers
+├── server.ts        # DB sync + listen
+├── models/          # Sequelize schema
+├── routes/          # Express routers
+├── controllers/     # HTTP handlers
+├── services/        # Business logic
+└── schedulers/      # Cron jobs
+```
+
+## API route groups
+
+| Prefix | Domain |
+|--------|--------|
+| `/api/auth` | Customer login, password |
+| `/api/admin` | Admin auth, users, schemes, transactions |
+| `/api/gold-prices` | Gold price CRUD + graph |
+| `/api/points` | Redemption |
+| `/api/user-schemes` | Enrollments |
+| `/api/transactions` | Customer ledger |
+| `/api/notifications` | Alerts |
+| `/api/circulars` | Promotional CMS |
+| `/api/referrals` | Referral leads |
+| `/api/analytics` | Admin analytics |
+| `/api/files` | S3 file management |
+| `/api/settings` | System config |
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development with nodemon |
+| `npm run build` | TypeScript compile |
+| `npm run start:prod` | Production start |
+| `npm test` | Jest tests |
+| `npm run start:pm2` | PM2 process manager |
+
+## Docker
 
 ```bash
-npm run build
-npm run start:prod
+docker compose up dev   # development
+docker compose up prod  # production
 ```
-
-### Using PM2 (Production)
-
-Start the application using PM2 process manager:
-
-```bash
-npm run build
-npm run start:pm2
-```
-
-PM2 commands:
-- `npm run stop:pm2` - Stop the application
-- `npm run restart:pm2` - Restart the application
-- `npm run status:pm2` - Check application status
-- `npm run logs:pm2` - View application logs
-- `npm run delete:pm2` - Delete the application from PM2
-
-## Testing
-
-Run tests:
-
-```bash
-npm test
-```
-
-Run tests in watch mode:
-
-```bash
-npm run test:watch
-```
-
-## Logging System
-
-The application uses a comprehensive logging system with Winston and Morgan:
-
-- **Winston**: For application-level logging with different log levels (error, warn, info, debug)
-- **Morgan**: For HTTP request logging
-- **Log Rotation**: Daily log files with automatic rotation and compression
-- **Environment-based configuration**: Different logging formats for development and production
-
-Logs are stored in the `logs` directory (configurable via `LOG_DIR` env variable).
-
-## API Documentation
-
-Once the application is running, you can access the Swagger documentation at:
-
-```
-http://localhost:3000/docs
-```
-
-## Endpoints
-
-The API provides the following main endpoint groups:
-
-- `/api/auth` - Authentication (login, register, etc.)
-- `/api/user` - User management
-- `/api/admin` - Admin authentication and operations
-- `/api/gold-prices` - Gold price data and statistics
-- `/api/user-schemes` - User scheme management
-- `/api/transactions` - Transaction handling
-- `/api/points` - Point redemption system
-- `/api/circulars` - Announcements and circulars
-- `/api/settings` - Application settings
-- `/api/dashboard` - Admin dashboard data
-- `/api/files` - File upload/download
-- `/api/analytics` - Application analytics
-- `/api/referrals` - Referral management
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
-This project is licensed under the ISC License.
+ISC
