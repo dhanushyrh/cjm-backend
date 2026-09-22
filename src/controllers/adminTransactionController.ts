@@ -242,30 +242,73 @@ export const listAllTransactions = async (req: Request, res: Response) => {
 
 
 /**
+ * Credit flat points to a single user scheme (ledger + balances).
+ * Shared by bulk and single-scheme admin endpoints.
+ */
+const creditPointsToUserScheme = async (
+  userScheme: UserScheme,
+  points: number,
+  description: string,
+  transaction: Parameters<typeof createTransaction>[0]["transaction"]
+) => {
+  const ledgerEntry = await createTransaction({
+    userSchemeId: userScheme.id,
+    transactionType: "points",
+    amount: 0,
+    goldGrams: 0,
+    points,
+    description,
+    transaction
+  });
+
+  await userScheme.update({
+    totalPoints: userScheme.totalPoints + points,
+    availablePoints: userScheme.availablePoints + points
+  }, { transaction });
+
+  return ledgerEntry;
+};
+
+const validatePointsPayload = (points: unknown, description: unknown) => {
+  if (!points || typeof points !== "number" || points <= 0) {
+    return {
+      success: false as const,
+      status: 400,
+      body: {
+        success: false,
+        error: "Invalid points value",
+        details: "Points must be a positive number"
+      }
+    };
+  }
+
+  if (!description || typeof description !== "string") {
+    return {
+      success: false as const,
+      status: 400,
+      body: {
+        success: false,
+        error: "Invalid description",
+        details: "Description is required and must be a string"
+      }
+    };
+  }
+
+  return { success: true as const, points, description };
+};
+
+/**
  * Create points transactions for all active user schemes
  * @param {number} points - Points to add to each active user scheme
  * @param {string} description - Description for the transaction
  */
 export const createPointsTransactionsForAllActiveUsers = async (req: Request, res: Response) => {
   try {
-    const { points, description } = req.body;
-
-    // Validate input
-    if (!points || typeof points !== 'number' || points <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid points value",
-        details: "Points must be a positive number"
-      });
+    const validation = validatePointsPayload(req.body.points, req.body.description);
+    if (!validation.success) {
+      return res.status(validation.status).json(validation.body);
     }
-
-    if (!description || typeof description !== 'string') {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid description",
-        details: "Description is required and must be a string"
-      });
-    }
+    const { points, description } = validation;
 
     // Get all active user schemes
     const activeUserSchemes = await UserScheme.findAll({
@@ -287,23 +330,12 @@ export const createPointsTransactionsForAllActiveUsers = async (req: Request, re
 
     try {
       for (const userScheme of activeUserSchemes) {
-        // Create transaction
-        const transaction = await createTransaction({
-          userSchemeId: userScheme.id,
-          transactionType: "points",
-          amount: 0,
-          goldGrams: 0,
-          points: points,
-          description: description,
-          transaction: t
-        });
-
-        // Update user scheme points
-        await userScheme.update({
-          totalPoints: userScheme.totalPoints + points,
-          availablePoints: userScheme.availablePoints + points
-        }, { transaction: t });
-
+        const transaction = await creditPointsToUserScheme(
+          userScheme,
+          points,
+          description,
+          t
+        );
         transactions.push(transaction);
       }
 
@@ -327,6 +359,78 @@ export const createPointsTransactionsForAllActiveUsers = async (req: Request, re
     return res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : "Failed to create points transactions"
+    });
+  }
+};
+
+/**
+ * Create a points transaction for one active user scheme
+ * @body {string} userSchemeId - Target user scheme enrollment
+ * @body {number} points - Points to add
+ * @body {string} description - Description for the transaction
+ */
+export const createPointsTransactionForUserScheme = async (req: Request, res: Response) => {
+  try {
+    const { userSchemeId } = req.body;
+    const validation = validatePointsPayload(req.body.points, req.body.description);
+    if (!validation.success) {
+      return res.status(validation.status).json(validation.body);
+    }
+    const { points, description } = validation;
+
+    if (!userSchemeId || typeof userSchemeId !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid userSchemeId",
+        details: "userSchemeId is required and must be a string"
+      });
+    }
+
+    const userScheme = await UserScheme.findByPk(userSchemeId);
+    if (!userScheme) {
+      return res.status(404).json({
+        success: false,
+        error: "User scheme not found",
+        details: `No user scheme found with id ${userSchemeId}`
+      });
+    }
+
+    if (userScheme.status !== "ACTIVE") {
+      return res.status(400).json({
+        success: false,
+        error: "User scheme is not active",
+        details: `Cannot award points to a scheme with status ${userScheme.status}`
+      });
+    }
+
+    const t = await sequelize.transaction();
+
+    try {
+      await creditPointsToUserScheme(userScheme, points, description, t);
+      await t.commit();
+
+      await userScheme.reload();
+
+      return res.status(201).json({
+        success: true,
+        message: "Points awarded successfully",
+        data: {
+          userSchemeId: userScheme.id,
+          points,
+          description,
+          totalPoints: userScheme.totalPoints,
+          availablePoints: userScheme.availablePoints
+        }
+      });
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error awarding points to user scheme:", error);
+    return res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to award points"
     });
   }
 };

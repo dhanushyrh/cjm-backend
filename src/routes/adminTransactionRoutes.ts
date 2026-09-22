@@ -1,7 +1,8 @@
 import express, { RequestHandler } from "express";
 import { 
   listAllTransactions,
-  createPointsTransactionsForAllActiveUsers 
+  createPointsTransactionsForAllActiveUsers,
+  createPointsTransactionForUserScheme
 } from "../controllers/adminTransactionController";
 import { authenticateAdmin } from "../middleware/authMiddleware";
 
@@ -34,5 +35,15 @@ router.get("/transactions", authenticateAdmin as RequestHandler, listAllTransact
  * @body    {string} description - Description for the transaction
  */
 router.post("/bulk-points", authenticateAdmin as RequestHandler, (createPointsTransactionsForAllActiveUsers as unknown) as RequestHandler);
+
+/**
+ * @route   POST /api/admin/user-scheme-points
+ * @desc    Create a points transaction for one active user scheme
+ * @access  Private (Admin)
+ * @body    {string} userSchemeId - Target user scheme enrollment
+ * @body    {number} points - Points to add
+ * @body    {string} description - Description for the transaction
+ */
+router.post("/user-scheme-points", authenticateAdmin as RequestHandler, (createPointsTransactionForUserScheme as unknown) as RequestHandler);
 
 export default router;
