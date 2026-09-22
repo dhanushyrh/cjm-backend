@@ -64,31 +64,6 @@ router.get("/user", authenticateUser as RequestHandler, schemeRequestController.
 
 /**
  * @swagger
- * /api/scheme-requests/{id}:
- *   get:
- *     tags: [Scheme Requests]
- *     summary: Get scheme request by ID
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *     responses:
- *       200:
- *         description: Scheme request details
- *       404:
- *         description: Request not found
- *       401:
- *         description: Unauthorized
- */
-router.get("/:id", authenticateUser as RequestHandler, schemeRequestController.getRequestById);
-
-/**
- * @swagger
  * /api/scheme-requests/admin/all:
  *   get:
  *     tags: [Scheme Requests]
@@ -120,6 +95,31 @@ router.get("/:id", authenticateUser as RequestHandler, schemeRequestController.g
  *         description: Forbidden - Admin access required
  */
 router.get("/admin/all", authenticateAdmin as RequestHandler, schemeRequestController.getAllRequests);
+
+/**
+ * @swagger
+ * /api/scheme-requests/{id}:
+ *   get:
+ *     tags: [Scheme Requests]
+ *     summary: Get scheme request by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Scheme request details
+ *       404:
+ *         description: Request not found
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/:id", authenticateUser as RequestHandler, schemeRequestController.getRequestById);
 
 /**
  * @swagger
