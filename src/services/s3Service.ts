@@ -15,8 +15,14 @@ const s3Client = new S3Client({
 });
 
 const defaultBucketName = process.env.S3_BUCKET_NAME || 'your-bucket-name';
-const dailyTasksBucketName =
-  process.env.S3_DAILY_TASKS_BUCKET_NAME || defaultBucketName;
+// Dedicated daily-tasks bucket needs IAM Put/Get/Delete + browser CORS.
+// Opt in with S3_DAILY_TASKS_USE_DEDICATED=true once AWS is configured;
+// otherwise proofs use the main docs bucket (same as circulars).
+const useDedicatedDailyTasksBucket =
+  process.env.S3_DAILY_TASKS_USE_DEDICATED === 'true';
+const dailyTasksBucketName = useDedicatedDailyTasksBucket
+  ? process.env.S3_DAILY_TASKS_BUCKET_NAME || defaultBucketName
+  : defaultBucketName;
 
 export const getBucketForPurpose = (purpose: FilePurpose): string => {
   if (purpose === 'DAILY_TASK_PROOF') {
