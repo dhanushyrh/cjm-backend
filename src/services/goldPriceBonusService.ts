@@ -131,7 +131,8 @@ export const calculateAndAddBonusPoints = async (newPrice: GoldPrice, previousPr
 
     const bonusConfig: BonusConfig = {
       defaultBonus: parseInt(defaultBonusPoints.value) || 5,
-      modValue: parseInt(bonusModValue.value) || 10
+      // modValue=5 → ceil(10/5)=2 pts per ₹10 hike per gram
+      modValue: parseInt(bonusModValue.value) || 5
     };
 
     // Calculate price difference
