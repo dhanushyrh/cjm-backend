@@ -19,7 +19,7 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
     }
 
     // Validate purpose
-    const validPurposes: FilePurpose[] = ['PROFILE_IMAGE', 'ID_PROOF', 'OTHER', 'SUPPORTING_DOC'];
+    const validPurposes: FilePurpose[] = ['PROFILE_IMAGE', 'ID_PROOF', 'OTHER', 'SUPPORTING_DOC', 'CIRCULAR'];
     if (!validPurposes.includes(purpose as FilePurpose)) {
       res.status(400).json({
         success: false,
@@ -41,10 +41,10 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
     const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const validDocumentTypes = ['application/pdf', 'image/jpeg', 'image/png'];
     
-    if (purpose === 'PROFILE_IMAGE' && !validImageTypes.includes(mimeType)) {
+    if ((purpose === 'PROFILE_IMAGE' || purpose === 'CIRCULAR') && !validImageTypes.includes(mimeType)) {
       res.status(400).json({
         success: false,
-        message: 'Invalid file type for profile image'
+        message: purpose === 'CIRCULAR' ? 'Invalid file type for circular image' : 'Invalid file type for profile image'
       });
       return;
     }
@@ -113,7 +113,7 @@ export const getUserFilesByPurpose = async (req: Request, res: Response): Promis
     const { userId, purpose } = req.params;
     
     // Validate purpose
-    const validPurposes: FilePurpose[] = ['PROFILE_IMAGE', 'ID_PROOF', 'OTHER', 'SUPPORTING_DOC'];
+    const validPurposes: FilePurpose[] = ['PROFILE_IMAGE', 'ID_PROOF', 'OTHER', 'SUPPORTING_DOC', 'CIRCULAR'];
     if (!validPurposes.includes(purpose as FilePurpose)) {
       res.status(400).json({
         success: false,
@@ -121,7 +121,7 @@ export const getUserFilesByPurpose = async (req: Request, res: Response): Promis
       });
       return;
     }
-    
+
     const files = await fileService.getUserFilesByPurpose(userId, purpose as FilePurpose);
     
     res.status(200).json({

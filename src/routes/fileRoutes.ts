@@ -39,7 +39,7 @@ const router = express.Router();
  *                 description: Optional user ID to associate the file with
  *               purpose:
  *                 type: string
- *                 enum: [PROFILE_IMAGE, ID_PROOF, OTHER, SUPPORTING_DOC]
+ *                 enum: [PROFILE_IMAGE, ID_PROOF, OTHER, SUPPORTING_DOC, CIRCULAR]
  *     responses:
  *       200:
  *         description: Presigned URL generated successfully
@@ -101,7 +101,7 @@ router.get('/test-config', authenticateAdmin as RequestHandler, async (req, res)
     );
     
     // Get valid purposes
-    const validPurposes = ['PROFILE_IMAGE', 'ID_PROOF', 'OTHER', 'SUPPORTING_DOC'];
+    const validPurposes = ['PROFILE_IMAGE', 'ID_PROOF', 'OTHER', 'SUPPORTING_DOC', 'CIRCULAR'];
     
     res.status(200).json({
       success: true,
@@ -146,7 +146,7 @@ router.get('/test-config', authenticateAdmin as RequestHandler, async (req, res)
  *         required: true
  *         schema:
  *           type: string
- *           enum: [PROFILE_IMAGE, ID_PROOF, OTHER, SUPPORTING_DOC]
+ *           enum: [PROFILE_IMAGE, ID_PROOF, OTHER, SUPPORTING_DOC, CIRCULAR]
  *     responses:
  *       200:
  *         description: Files retrieved successfully

@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
 import User from "./User";
 
-export type FilePurpose = "PROFILE_IMAGE" | "ID_PROOF" | "OTHER" | "SUPPORTING_DOC";
+export type FilePurpose = "PROFILE_IMAGE" | "ID_PROOF" | "OTHER" | "SUPPORTING_DOC" | "CIRCULAR";
 
 class File extends Model {
   public id!: string;
