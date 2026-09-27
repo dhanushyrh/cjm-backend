@@ -19,7 +19,14 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
     }
 
     // Validate purpose
-    const validPurposes: FilePurpose[] = ['PROFILE_IMAGE', 'ID_PROOF', 'OTHER', 'SUPPORTING_DOC', 'CIRCULAR'];
+    const validPurposes: FilePurpose[] = [
+      'PROFILE_IMAGE',
+      'ID_PROOF',
+      'OTHER',
+      'SUPPORTING_DOC',
+      'CIRCULAR',
+      'DAILY_TASK_PROOF',
+    ];
     if (!validPurposes.includes(purpose as FilePurpose)) {
       res.status(400).json({
         success: false,
@@ -28,11 +35,15 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Validate file size (10MB max)
-    if (size > 10 * 1024 * 1024) {
+    const maxSize =
+      purpose === 'DAILY_TASK_PROOF' ? 1 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (size > maxSize) {
       res.status(400).json({
         success: false,
-        message: 'File too large (max 10MB)'
+        message:
+          purpose === 'DAILY_TASK_PROOF'
+            ? 'File too large (max 1MB)'
+            : 'File too large (max 10MB)'
       });
       return;
     }
@@ -41,10 +52,20 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
     const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const validDocumentTypes = ['application/pdf', 'image/jpeg', 'image/png'];
     
-    if ((purpose === 'PROFILE_IMAGE' || purpose === 'CIRCULAR') && !validImageTypes.includes(mimeType)) {
+    if (
+      (purpose === 'PROFILE_IMAGE' ||
+        purpose === 'CIRCULAR' ||
+        purpose === 'DAILY_TASK_PROOF') &&
+      !validImageTypes.includes(mimeType)
+    ) {
       res.status(400).json({
         success: false,
-        message: purpose === 'CIRCULAR' ? 'Invalid file type for circular image' : 'Invalid file type for profile image'
+        message:
+          purpose === 'DAILY_TASK_PROOF'
+            ? 'Invalid file type for task proof image'
+            : purpose === 'CIRCULAR'
+              ? 'Invalid file type for circular image'
+              : 'Invalid file type for profile image'
       });
       return;
     }
@@ -113,7 +134,14 @@ export const getUserFilesByPurpose = async (req: Request, res: Response): Promis
     const { userId, purpose } = req.params;
     
     // Validate purpose
-    const validPurposes: FilePurpose[] = ['PROFILE_IMAGE', 'ID_PROOF', 'OTHER', 'SUPPORTING_DOC', 'CIRCULAR'];
+    const validPurposes: FilePurpose[] = [
+      'PROFILE_IMAGE',
+      'ID_PROOF',
+      'OTHER',
+      'SUPPORTING_DOC',
+      'CIRCULAR',
+      'DAILY_TASK_PROOF',
+    ];
     if (!validPurposes.includes(purpose as FilePurpose)) {
       res.status(400).json({
         success: false,
@@ -247,7 +275,11 @@ export const getFileAccessUrl = async (req: Request, res: Response): Promise<voi
     
     // Generate signed URL with optional expiration time
     const expiration = expiresIn ? parseInt(expiresIn as string) : undefined;
-    const signedUrl = await getSignedReadUrl(file.path, expiration);
+    const signedUrl = await getSignedReadUrl(
+      file.path,
+      expiration,
+      fileService.resolveFileBucket(file)
+    );
     
     res.status(200).json({
       success: true,
@@ -305,7 +337,11 @@ export const getUserFileAccessUrl = async (req: Request, res: Response): Promise
     
     // Generate signed URL with optional expiration time
     const expiration = expiresIn ? parseInt(expiresIn as string) : undefined;
-    const signedUrl = await getSignedReadUrl(file.path, expiration);
+    const signedUrl = await getSignedReadUrl(
+      file.path,
+      expiration,
+      fileService.resolveFileBucket(file)
+    );
     
     res.status(200).json({
       success: true,
@@ -323,4 +359,65 @@ export const getUserFileAccessUrl = async (req: Request, res: Response): Promise
       message: error.message || 'Failed to generate file access URL'
     });
   }
-}; 
+};
+
+/** Authenticated user upload URL — only DAILY_TASK_PROOF (≤1MB images). */
+export const getUserDailyTaskProofUploadUrl = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = (req as any).user?.id;
+    const { originalName, mimeType, size } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    if (!originalName || !mimeType || size === undefined) {
+      res.status(400).json({
+        success: false,
+        message: 'originalName, mimeType, and size are required',
+      });
+      return;
+    }
+
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validImageTypes.includes(mimeType)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid file type for task proof image',
+      });
+      return;
+    }
+
+    if (Number(size) > 1 * 1024 * 1024) {
+      res.status(400).json({
+        success: false,
+        message: 'File too large (max 1MB)',
+      });
+      return;
+    }
+
+    const result = await fileService.getFileUploadUrl({
+      originalName,
+      mimeType,
+      size: Number(size),
+      userId,
+      purpose: 'DAILY_TASK_PROOF',
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('Error generating daily task proof upload URL:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate upload URL',
+    });
+  }
+};
+ 

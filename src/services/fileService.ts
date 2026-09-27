@@ -1,5 +1,5 @@
 import File, { FilePurpose } from '../models/File';
-import { getPresignedUrl, getPublicUrl, deleteFile } from './s3Service';
+import { getPresignedUrl, deleteFile, getDefaultBucketName } from './s3Service';
 import { generateUniqueFilename } from './s3Service';
 import User from '../models/User';
 import { Transaction } from 'sequelize';
@@ -17,15 +17,14 @@ export interface PresignedUrlResponse {
   fields: any;
   fileId: string;
   key: string;
+  bucket: string;
 }
 
-// Generate a presigned URL for direct upload to S3
 export const getFileUploadUrl = async (
   params: FileUploadParams,
   transaction?: Transaction
 ): Promise<PresignedUrlResponse> => {
   try {
-    // Validate the user if userId is provided
     if (params.userId) {
       const user = await User.findByPk(params.userId);
       if (!user) {
@@ -33,15 +32,13 @@ export const getFileUploadUrl = async (
       }
     }
 
-    // Generate a unique key for S3
-    const { url, fields, key } = await getPresignedUrl(
+    const { url, fields, key, bucket } = await getPresignedUrl(
       params.purpose,
       params.originalName,
       params.mimeType,
       params.userId
     );
 
-    // Create a file record in the database
     const file = await File.create(
       {
         originalName: params.originalName,
@@ -50,6 +47,7 @@ export const getFileUploadUrl = async (
         size: params.size,
         path: key,
         url: url,
+        bucket,
         userId: params.userId || null,
         purpose: params.purpose,
         is_deleted: false
@@ -61,7 +59,8 @@ export const getFileUploadUrl = async (
       uploadUrl: url,
       fields,
       fileId: file.id,
-      key
+      key,
+      bucket
     };
   } catch (error) {
     console.error('Error getting file upload URL:', error);
@@ -69,7 +68,6 @@ export const getFileUploadUrl = async (
   }
 };
 
-// Get file by ID
 export const getFileById = async (fileId: string): Promise<File | null> => {
   return await File.findOne({
     where: {
@@ -79,7 +77,6 @@ export const getFileById = async (fileId: string): Promise<File | null> => {
   });
 };
 
-// Get user files by purpose
 export const getUserFilesByPurpose = async (
   userId: string,
   purpose: FilePurpose
@@ -94,32 +91,26 @@ export const getUserFilesByPurpose = async (
   });
 };
 
-// Mark file as deleted
 export const markFileAsDeleted = async (fileId: string): Promise<void> => {
   const file = await File.findByPk(fileId);
-  
+
   if (!file) {
     throw new Error('File not found');
   }
 
-  // Mark as deleted in database
   await file.update({ is_deleted: true });
-
-  // Optionally delete from S3 as well
-  // await deleteFile(file.path);
 };
 
-// Delete file from S3 and database
 export const permanentlyDeleteFile = async (fileId: string): Promise<void> => {
   const file = await File.findByPk(fileId);
-  
+
   if (!file) {
     throw new Error('File not found');
   }
 
-  // Delete from S3
-  await deleteFile(file.path);
-
-  // Delete from database
+  await deleteFile(file.path, file.bucket || getDefaultBucketName());
   await file.destroy();
-}; 
+};
+
+export const resolveFileBucket = (file: File): string =>
+  file.bucket || getDefaultBucketName();

@@ -51,6 +51,11 @@ const router = express.Router();
  *         description: Server error
  */
 router.post('/upload-url', authenticateAdmin as RequestHandler, fileController.getPresignedUrl);
+router.post(
+  '/user-upload-url',
+  authenticateUser as RequestHandler,
+  fileController.getUserDailyTaskProofUploadUrl as RequestHandler
+);
 
 /**
  * @swagger

@@ -2,7 +2,13 @@ import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
 import User from "./User";
 
-export type FilePurpose = "PROFILE_IMAGE" | "ID_PROOF" | "OTHER" | "SUPPORTING_DOC" | "CIRCULAR";
+export type FilePurpose =
+  | "PROFILE_IMAGE"
+  | "ID_PROOF"
+  | "OTHER"
+  | "SUPPORTING_DOC"
+  | "CIRCULAR"
+  | "DAILY_TASK_PROOF";
 
 class File extends Model {
   public id!: string;
@@ -12,15 +18,14 @@ class File extends Model {
   public size!: number;
   public path!: string;
   public url!: string;
+  public bucket!: string | null;
   public userId?: string;
   public purpose!: FilePurpose;
   public is_deleted!: boolean;
 
-  // Timestamps
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
-  // Associations
   public readonly user?: User;
 }
 
@@ -55,6 +60,10 @@ File.init(
       type: DataTypes.STRING(500),
       allowNull: false,
     },
+    bucket: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
     userId: {
       type: DataTypes.UUID,
       allowNull: true,
@@ -81,12 +90,15 @@ File.init(
         fields: ["userId", "purpose"],
         name: "idx_files_user_purpose",
       },
+      {
+        fields: ["purpose", "is_deleted", "createdAt"],
+        name: "idx_files_purpose_created",
+      },
     ],
   }
 );
 
-// Add association with User model
 File.belongsTo(User, { foreignKey: "userId", as: "user" });
 User.hasMany(File, { foreignKey: "userId", as: "files" });
 
-export default File; 
+export default File;

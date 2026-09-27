@@ -13,6 +13,8 @@ import Settings from "./Settings";
 import File from "./File";
 import SchemeRequest from "./SchemeRequest";
 import Notification from "./Notification";
+import DailyTask from "./DailyTask";
+import DailyTaskSubmission from "./DailyTaskSubmission";
 
 export const setupAssociations = () => {
   // User <-> UserScheme associations
@@ -131,5 +133,35 @@ export const setupAssociations = () => {
   User.hasMany(Notification, {
     foreignKey: "userId",
     as: "notifications",
+  });
+
+  // Daily tasks
+  DailyTask.hasMany(DailyTaskSubmission, {
+    foreignKey: "task_id",
+    as: "submissions",
+  });
+  DailyTaskSubmission.belongsTo(DailyTask, {
+    foreignKey: "task_id",
+    as: "task",
+  });
+  User.hasMany(DailyTaskSubmission, {
+    foreignKey: "user_id",
+    as: "dailyTaskSubmissions",
+  });
+  DailyTaskSubmission.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+  });
+  DailyTaskSubmission.belongsTo(File, {
+    foreignKey: "image_file_id",
+    as: "imageFile",
+  });
+  Admin.hasMany(DailyTask, {
+    foreignKey: "created_by",
+    as: "createdDailyTasks",
+  });
+  DailyTask.belongsTo(Admin, {
+    foreignKey: "created_by",
+    as: "creator",
   });
 }; 

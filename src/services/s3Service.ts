@@ -6,7 +6,6 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from 'uuid';
 import { FilePurpose } from '../models/File';
 
-// Configure AWS
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
   credentials: {
@@ -15,36 +14,47 @@ const s3Client = new S3Client({
   }
 });
 
-const bucketName = process.env.S3_BUCKET_NAME || 'your-bucket-name';
+const defaultBucketName = process.env.S3_BUCKET_NAME || 'your-bucket-name';
+const dailyTasksBucketName =
+  process.env.S3_DAILY_TASKS_BUCKET_NAME || defaultBucketName;
 
-// Generate a folder path based on purpose
+export const getBucketForPurpose = (purpose: FilePurpose): string => {
+  if (purpose === 'DAILY_TASK_PROOF') {
+    return dailyTasksBucketName;
+  }
+  return defaultBucketName;
+};
+
+export const getDefaultBucketName = (): string => defaultBucketName;
+export const getDailyTasksBucketName = (): string => dailyTasksBucketName;
+
 const getFolderPath = (purpose: FilePurpose, userId?: string): string => {
-  const basePath = purpose.toLowerCase().replace('_', '-');
+  const basePath = purpose.toLowerCase().replace(/_/g, '-');
   return userId ? `users/${userId}/${basePath}/` : `uploads/${basePath}/`;
 };
 
-// Generate a unique filename
 export const generateUniqueFilename = (originalName: string): string => {
   const extension = originalName.split('.').pop() || '';
   return `${uuidv4()}${extension ? '.' + extension : ''}`;
 };
 
-// Generate a pre-signed URL for client-side uploads
 export const getPresignedUrl = async (
   purpose: FilePurpose,
   fileName: string,
   fileType: string,
   userId?: string
-): Promise<{ url: string; fields: any; key: string }> => {
+): Promise<{ url: string; fields: any; key: string; bucket: string }> => {
   const folderPath = getFolderPath(purpose, userId);
   const uniqueFilename = generateUniqueFilename(fileName);
   const key = `${folderPath}${uniqueFilename}`;
+  const bucket = getBucketForPurpose(purpose);
+  const maxBytes = purpose === 'DAILY_TASK_PROOF' ? 1048576 : 10485760;
 
   const params: PresignedPostOptions = {
-    Bucket: bucketName,
+    Bucket: bucket,
     Key: key,
     Conditions: [
-      ["content-length-range", 0, 10485760],
+      ["content-length-range", 0, maxBytes],
       ["eq", "$Content-Type", fileType]
     ],
     Fields: {
@@ -58,7 +68,8 @@ export const getPresignedUrl = async (
     return {
       url: presignedPost.url,
       fields: presignedPost.fields,
-      key
+      key,
+      bucket
     };
   } catch (error) {
     console.error('Error generating presigned URL:', error);
@@ -66,15 +77,16 @@ export const getPresignedUrl = async (
   }
 };
 
-// Get a public URL for a file
-export const getPublicUrl = (key: string): string => {
-  return `https://${bucketName}.s3.amazonaws.com/${key}`;
+export const getPublicUrl = (key: string, bucket: string = defaultBucketName): string => {
+  return `https://${bucket}.s3.amazonaws.com/${key}`;
 };
 
-// Delete a file from S3
-export const deleteFile = async (key: string): Promise<void> => {
+export const deleteFile = async (
+  key: string,
+  bucket: string = defaultBucketName
+): Promise<void> => {
   const command = new DeleteObjectCommand({
-    Bucket: bucketName,
+    Bucket: bucket,
     Key: key
   });
 
@@ -86,21 +98,20 @@ export const deleteFile = async (key: string): Promise<void> => {
   }
 };
 
-// Generate a signed URL for viewing a file (with expiration)
 export const getSignedReadUrl = async (
-  key: string, 
-  expiresIn: number = 3600 // Default 1 hour in seconds
+  key: string,
+  expiresIn: number = 3600,
+  bucket: string = defaultBucketName
 ): Promise<string> => {
   const command = new GetObjectCommand({
-    Bucket: bucketName,
+    Bucket: bucket,
     Key: key
   });
 
   try {
-    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
-    return signedUrl;
+    return await getSignedUrl(s3Client, command, { expiresIn });
   } catch (error) {
     console.error('Error generating signed URL for reading:', error);
     throw new Error('Failed to generate signed URL for file access');
   }
-}; 
+};

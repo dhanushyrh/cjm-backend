@@ -22,9 +22,11 @@ import referralRoutes from "./routes/referralRoutes";
 import circularRoutes from "./routes/circularRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import schemeRequestRoutes from "./routes/schemeRequestRoutes";
+import dailyTaskRoutes from "./routes/dailyTaskRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
 import { startGoldAccrualScheduler } from "./schedulers/goldAccrualScheduler";
 import { startMaturityRedemptionScheduler } from "./schedulers/maturityRedemptionScheduler";
+import { startDailyTaskProofFlushScheduler } from "./schedulers/dailyTaskProofFlushScheduler";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { stream as winstonStream } from './config/winston';
@@ -87,6 +89,7 @@ app.use("/api/referrals", referralRoutes);
 app.use("/api/circulars", circularRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/scheme-requests", schemeRequestRoutes);
+app.use("/api/daily-tasks", dailyTaskRoutes);
 
 // Swagger documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -104,5 +107,6 @@ app.get("/", async (req, res) => {
 startPointsRecalculationScheduler();
 startGoldAccrualScheduler().catch(err => console.error("Failed to start gold accrual scheduler:", err));
 startMaturityRedemptionScheduler().catch(err => console.error("Failed to start maturity redemption scheduler:", err));
+startDailyTaskProofFlushScheduler().catch(err => console.error("Failed to start daily task proof flush scheduler:", err));
 
 export default app;
