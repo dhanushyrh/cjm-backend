@@ -119,6 +119,106 @@ export const getMe = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/** Change password for the authenticated admin/staff. */
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const id = getActingAdminId(req);
+    if (!id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        error: "currentPassword and newPassword are required",
+      });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({
+        error: "New password must be at least 6 characters",
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        error: "New password must be different from the current password",
+      });
+    }
+
+    const admin = await Admin.findByPk(id);
+    if (!admin) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    const isMatch = await compareAdminPassword(currentPassword, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    admin.password = await hashAdminPassword(String(newPassword));
+    await admin.save();
+
+    res.json({ message: "Password updated successfully" });
+  } catch (error: any) {
+    console.error("Change Password Error:", error);
+    res.status(500).json({ error: "Failed to change password" });
+  }
+};
+
+/** List all admin panel accounts (ADMIN + STAFF). */
+export const listAdminAccounts = async (_req: Request, res: Response) => {
+  try {
+    const accounts = await Admin.findAll({
+      order: [
+        ["role", "ASC"],
+        ["createdAt", "DESC"],
+      ],
+    });
+    res.json({ success: true, data: serializeAdmins(accounts) });
+  } catch (error: any) {
+    console.error("List Admin Accounts Error:", error);
+    res.status(500).json({ error: "Failed to list accounts" });
+  }
+};
+
+/** Create ADMIN or STAFF account (ADMIN only via staff:manage). */
+export const createAdminAccount = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, role } = req.body ?? {};
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "name, email, and password are required" });
+    }
+
+    const targetRole =
+      role === AdminRole.STAFF ? AdminRole.STAFF : AdminRole.ADMIN;
+
+    const existingAdmin = await Admin.findOne({ where: { email } });
+    if (existingAdmin) {
+      return res.status(400).json({ error: "Account with this email already exists" });
+    }
+
+    const hashedPassword = await hashAdminPassword(password);
+    const account = await Admin.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: targetRole,
+    });
+
+    res.status(201).json({
+      message:
+        targetRole === AdminRole.STAFF
+          ? "Staff account created successfully"
+          : "Admin account created successfully",
+      admin: serializeAdmin(account),
+    });
+  } catch (error: any) {
+    console.error("Create Admin Account Error:", error);
+    res.status(500).json({ error: "Failed to create account" });
+  }
+};
+
 // Login admin and return JWT token
 export const loginAdmin = async (req: Request, res: Response) => {
   try {

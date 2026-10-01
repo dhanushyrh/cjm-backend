@@ -7,7 +7,7 @@ describe("Admin Routes", () => {
 
   beforeAll(async () => {
     const res = await request(app).post("/api/admin/login").send({
-      email: "admin@example.com",
+      email: "admin@hiranya.com",
       password: "admin123",
     });
     token = res.body.token;

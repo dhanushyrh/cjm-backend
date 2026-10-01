@@ -1,5 +1,5 @@
 import express, { Router, RequestHandler } from "express";
-import { registerAdmin, loginAdmin, registerUser, createStaff, listStaff, getMe } from "../controllers/adminAuthController";
+import { registerAdmin, loginAdmin, registerUser, createStaff, listStaff, getMe, changePassword, listAdminAccounts, createAdminAccount } from "../controllers/adminAuthController";
 import { fetchUsers, updateUserStatus, searchUserByUserId, fetchUserById, updateUserDetailsController } from "../controllers/userController";
 import { removeUser } from "../controllers/userController";
 import { addScheme, fetchSchemes, fetchSchemeById, modifyScheme, removeScheme } from "../controllers/schemeController";
@@ -89,6 +89,25 @@ const router: Router = express.Router();
 router.post("/login", loginAdmin as RequestHandler);
 
 router.get("/me", authenticateAdmin as RequestHandler, getMe as RequestHandler);
+
+router.post(
+  "/change-password",
+  authenticateAdmin as RequestHandler,
+  changePassword as RequestHandler
+);
+
+router.get(
+  "/accounts",
+  authenticateAdmin as RequestHandler,
+  requirePermission("staff:manage") as RequestHandler,
+  listAdminAccounts as RequestHandler
+);
+router.post(
+  "/accounts",
+  authenticateAdmin as RequestHandler,
+  requirePermission("staff:manage") as RequestHandler,
+  createAdminAccount as RequestHandler
+);
 
 router.get(
   "/staff",

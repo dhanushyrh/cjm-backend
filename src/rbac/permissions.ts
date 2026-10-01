@@ -85,7 +85,7 @@ const ALL_PERMISSIONS: Permission[] = [
   "notifications:broadcast",
 ];
 
-/** Staff: CRU on gold price, scheme/support requests, daily tasks, circulars; create-only users. */
+/** Staff: CRU on gold price, scheme/support requests, daily tasks, circulars; create-only users; view-only schemes. */
 const STAFF_PERMISSIONS: Permission[] = [
   "gold_price:read",
   "gold_price:create",
