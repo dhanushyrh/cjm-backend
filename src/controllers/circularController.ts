@@ -193,8 +193,26 @@ export const getAllCirculars = async (req: Request, res: Response) => {
       });
     }
 
-    // Get circulars
-    const result = await circularService.getAllCirculars(paginationParams.page, paginationParams.limit);
+    const filterParam = (req.query.filter as string | undefined)?.toLowerCase();
+    const filter =
+      filterParam === "active" ||
+      filterParam === "inactive" ||
+      filterParam === "history" ||
+      filterParam === "all"
+        ? filterParam
+        : undefined;
+
+    let isActive: boolean | undefined;
+    if (req.query.isActive !== undefined) {
+      isActive = String(req.query.isActive).toLowerCase() === "true";
+    }
+
+    // Get circulars (supports ?isActive=true|false and ?filter=active|inactive|history)
+    const result = await circularService.getAllCirculars(
+      paginationParams.page,
+      paginationParams.limit,
+      { isActive, filter }
+    );
 
     apiSuccess(res, result);
   } catch (error: any) {

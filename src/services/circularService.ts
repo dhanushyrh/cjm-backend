@@ -98,21 +98,36 @@ export const getCircular = async (id: string): Promise<Circular | null> => {
   });
 };
 
+export type CircularListFilter = "all" | "active" | "inactive" | "history";
+
 /**
  * Gets all circulars with pagination
  * @param page Page number
  * @param limit Items per page
+ * @param options Optional isActive / list filter (active | inactive | history)
  * @returns Circulars with pagination information
  */
 export const getAllCirculars = async (
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  options: { isActive?: boolean; filter?: CircularListFilter } = {}
 ): Promise<PaginationResult<Circular>> => {
   const { offset, limit: limitValue } = getPagination(page, limit);
+  const today = new Date();
   
   const whereOptions: WhereOptions<any> = {
     is_deleted: false
   };
+
+  const filter = options.filter;
+  if (filter === "active" || (filter === undefined && options.isActive === true)) {
+    whereOptions.is_active = true;
+  } else if (filter === "inactive" || (filter === undefined && options.isActive === false)) {
+    whereOptions.is_active = false;
+  } else if (filter === "history") {
+    // Past circulars: ended before today (whether still flagged active or not)
+    whereOptions.end_date = { [Op.lt]: today };
+  }
   
   const { count, rows } = await Circular.findAndCountAll({
     where: whereOptions,
