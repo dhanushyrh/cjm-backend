@@ -36,20 +36,20 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
     }
 
     const maxSize =
-      purpose === 'DAILY_TASK_PROOF' ? 1 * 1024 * 1024 : 10 * 1024 * 1024;
+      purpose === 'DAILY_TASK_PROOF' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
     if (size > maxSize) {
       res.status(400).json({
         success: false,
         message:
           purpose === 'DAILY_TASK_PROOF'
-            ? 'File too large (max 1MB)'
+            ? 'File too large (max 5MB)'
             : 'File too large (max 10MB)'
       });
       return;
     }
 
     // Validate mime types
-    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
     const validDocumentTypes = ['application/pdf', 'image/jpeg', 'image/png'];
     
     if (
@@ -361,7 +361,7 @@ export const getUserFileAccessUrl = async (req: Request, res: Response): Promise
   }
 };
 
-/** Authenticated user upload URL — only DAILY_TASK_PROOF (≤1MB images). */
+/** Authenticated user upload URL — only DAILY_TASK_PROOF (≤5MB images). */
 export const getUserDailyTaskProofUploadUrl = async (
   req: Request,
   res: Response
@@ -383,7 +383,7 @@ export const getUserDailyTaskProofUploadUrl = async (
       return;
     }
 
-    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
     if (!validImageTypes.includes(mimeType)) {
       res.status(400).json({
         success: false,
@@ -392,10 +392,10 @@ export const getUserDailyTaskProofUploadUrl = async (
       return;
     }
 
-    if (Number(size) > 1 * 1024 * 1024) {
+    if (Number(size) > 5 * 1024 * 1024) {
       res.status(400).json({
         success: false,
-        message: 'File too large (max 1MB)',
+        message: 'File too large (max 5MB)',
       });
       return;
     }
