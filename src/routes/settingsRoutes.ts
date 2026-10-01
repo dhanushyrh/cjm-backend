@@ -1,8 +1,27 @@
 import { RequestHandler, Router } from "express";
-import { fetchSettings, fetchSetting, updateSetting, removeSetting, createSetting, fetchSettingByKey } from "../controllers/settingsController";
+import {
+  fetchSettings,
+  fetchSetting,
+  updateSetting,
+  removeSetting,
+  createSetting,
+  fetchSettingByKey,
+  fetchContactInfo,
+  updateContactInfo,
+} from "../controllers/settingsController";
 import { authenticateAdmin, requirePermission } from "../middleware/authMiddleware";
 
 const router = Router();
+
+/** Public contact details for the mobile app footer */
+router.get("/public/contact", fetchContactInfo as RequestHandler);
+
+router.put(
+  "/contact",
+  authenticateAdmin as RequestHandler,
+  requirePermission("settings:write") as RequestHandler,
+  updateContactInfo as RequestHandler
+);
 
 router.use(authenticateAdmin as RequestHandler);
 

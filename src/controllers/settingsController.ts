@@ -1,6 +1,97 @@
 import { Request, Response } from "express";
-import { getSetting, getSettings, setSetting, deleteSetting } from "../services/settingsService";
+import {
+  getSetting,
+  getSettings,
+  setSetting,
+  deleteSetting,
+  getContactInfo,
+  upsertContactInfo,
+} from "../services/settingsService";
 import Settings from "../models/Settings";
+
+export const fetchContactInfo = async (_req: Request, res: Response) => {
+  try {
+    const data = await getContactInfo();
+    res.status(200).json({
+      message: "Contact info fetched successfully",
+      data,
+    });
+  } catch (error: any) {
+    console.error("Contact Fetch Error:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ error: "Failed to fetch contact info" });
+  }
+};
+
+const isHttpUrl = (value: string) => {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+export const updateContactInfo = async (req: Request, res: Response) => {
+  try {
+    const { address, phone, email, termsUrl, privacyUrl } = req.body ?? {};
+
+    if (
+      address === undefined &&
+      phone === undefined &&
+      email === undefined &&
+      termsUrl === undefined &&
+      privacyUrl === undefined
+    ) {
+      return res.status(400).json({
+        error: "Missing fields",
+        details: "Provide at least one contact field",
+      });
+    }
+
+    if (email !== undefined && email !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+      return res.status(400).json({
+        error: "Invalid email",
+        details: "Provide a valid email address",
+      });
+    }
+
+    if (termsUrl !== undefined && String(termsUrl).trim() !== "" && !isHttpUrl(String(termsUrl).trim())) {
+      return res.status(400).json({
+        error: "Invalid terms URL",
+        details: "Terms URL must start with http:// or https://",
+      });
+    }
+
+    if (privacyUrl !== undefined && String(privacyUrl).trim() !== "" && !isHttpUrl(String(privacyUrl).trim())) {
+      return res.status(400).json({
+        error: "Invalid privacy URL",
+        details: "Privacy policy URL must start with http:// or https://",
+      });
+    }
+
+    const data = await upsertContactInfo({
+      address: address !== undefined ? String(address) : undefined,
+      phone: phone !== undefined ? String(phone) : undefined,
+      email: email !== undefined ? String(email) : undefined,
+      termsUrl: termsUrl !== undefined ? String(termsUrl) : undefined,
+      privacyUrl: privacyUrl !== undefined ? String(privacyUrl) : undefined,
+    });
+
+    res.status(200).json({
+      message: "Contact info updated successfully",
+      data,
+    });
+  } catch (error: any) {
+    console.error("Contact Update Error:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ error: "Failed to update contact info" });
+  }
+};
 
 export const fetchSettings = async (_req: Request, res: Response) => {
   try {

@@ -23,6 +23,9 @@ export async function ensureRbacSchema(): Promise<void> {
     `ALTER TABLE "circulars" ADD COLUMN IF NOT EXISTS "updated_by" UUID`,
 
     `ALTER TABLE "daily_tasks" ADD COLUMN IF NOT EXISTS "updated_by" UUID`,
+
+    // Contact address may exceed VARCHAR(255)
+    `ALTER TABLE "Settings" ALTER COLUMN "value" TYPE TEXT`,
   ];
 
   for (const sql of statements) {

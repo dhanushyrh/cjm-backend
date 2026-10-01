@@ -25,7 +25,7 @@ Settings.init(
       unique: true,
     },
     value: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     is_deleted: {
