@@ -1,5 +1,5 @@
 import express, { RequestHandler } from "express";
-import { authenticateAdmin, authenticateUser } from "../middleware/authMiddleware";
+import { authenticateAdmin, authenticateUser, requirePermission } from "../middleware/authMiddleware";
 import * as schemeRequestController from "../controllers/schemeRequestController";
 
 const router = express.Router();
@@ -94,7 +94,7 @@ router.get("/user", authenticateUser as RequestHandler, schemeRequestController.
  *       403:
  *         description: Forbidden - Admin access required
  */
-router.get("/admin/all", authenticateAdmin as RequestHandler, schemeRequestController.getAllRequests);
+router.get("/admin/all", authenticateAdmin as RequestHandler, requirePermission("scheme_requests:read") as RequestHandler, schemeRequestController.getAllRequests);
 
 /**
  * @swagger
@@ -161,7 +161,7 @@ router.get("/:id", authenticateUser as RequestHandler, schemeRequestController.g
  *       403:
  *         description: Forbidden - Admin access required
  */
-router.patch("/:id", authenticateAdmin as RequestHandler, schemeRequestController.updateRequest);
+router.patch("/:id", authenticateAdmin as RequestHandler, requirePermission("scheme_requests:update") as RequestHandler, schemeRequestController.updateRequest);
 
 /**
  * @swagger

@@ -1,6 +1,6 @@
 import express, { RequestHandler } from "express";
 import { setGoldPrice, getGoldPrices, getGoldPriceGraph, getCurrentGoldPrice } from "../controllers/goldPriceController";
-import { authenticateAdmin } from "../middleware/authMiddleware";
+import { authenticateAdmin, requirePermission } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -124,7 +124,7 @@ router.get("/graph", (getGoldPriceGraph as unknown) as RequestHandler);
  *       403:
  *         description: Not an admin
  */
-router.post("/", authenticateAdmin as RequestHandler, (setGoldPrice as unknown) as RequestHandler);
+router.post("/", authenticateAdmin as RequestHandler, requirePermission("gold_price:create") as RequestHandler, (setGoldPrice as unknown) as RequestHandler);
 
 /**
  * @swagger

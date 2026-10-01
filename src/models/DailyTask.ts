@@ -9,6 +9,7 @@ interface DailyTaskAttributes {
   expires_at: Date;
   is_active: boolean;
   created_by: string | null;
+  updated_by?: string | null;
   is_deleted: boolean;
   created_at: Date;
   updated_at: Date;
@@ -17,7 +18,7 @@ interface DailyTaskAttributes {
 interface DailyTaskCreationAttributes
   extends Optional<
     DailyTaskAttributes,
-    "id" | "title" | "created_by" | "is_active" | "is_deleted" | "created_at" | "updated_at"
+    "id" | "title" | "created_by" | "updated_by" | "is_active" | "is_deleted" | "created_at" | "updated_at"
   > {}
 
 export class DailyTask extends Model<DailyTaskAttributes, DailyTaskCreationAttributes> {
@@ -28,6 +29,7 @@ export class DailyTask extends Model<DailyTaskAttributes, DailyTaskCreationAttri
   public expires_at!: Date;
   public is_active!: boolean;
   public created_by!: string | null;
+  public updated_by!: string | null;
   public is_deleted!: boolean;
 
   public readonly created_at!: Date;
@@ -63,6 +65,10 @@ DailyTask.init(
       defaultValue: true,
     },
     created_by: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    updated_by: {
       type: DataTypes.UUID,
       allowNull: true,
     },

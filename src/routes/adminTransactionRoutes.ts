@@ -4,7 +4,7 @@ import {
   createPointsTransactionsForAllActiveUsers,
   createPointsTransactionForUserScheme
 } from "../controllers/adminTransactionController";
-import { authenticateAdmin } from "../middleware/authMiddleware";
+import { authenticateAdmin, requirePermission } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ const router = express.Router();
  * @query   {string} sortBy - Field to sort by (createdAt, amount, goldGrams, points)
  * @query   {string} sortOrder - Sort order (asc, desc)
  */
-router.get("/transactions", authenticateAdmin as RequestHandler, listAllTransactions as RequestHandler);
+router.get("/transactions", authenticateAdmin as RequestHandler, requirePermission("transactions:read") as RequestHandler, listAllTransactions as RequestHandler);
 
 /**
  * @route   POST /api/admin/bulk-points
@@ -34,7 +34,7 @@ router.get("/transactions", authenticateAdmin as RequestHandler, listAllTransact
  * @body    {number} points - Points to add to each active user scheme
  * @body    {string} description - Description for the transaction
  */
-router.post("/bulk-points", authenticateAdmin as RequestHandler, (createPointsTransactionsForAllActiveUsers as unknown) as RequestHandler);
+router.post("/bulk-points", authenticateAdmin as RequestHandler, requirePermission("transactions:write") as RequestHandler, (createPointsTransactionsForAllActiveUsers as unknown) as RequestHandler);
 
 /**
  * @route   POST /api/admin/user-scheme-points
@@ -44,6 +44,6 @@ router.post("/bulk-points", authenticateAdmin as RequestHandler, (createPointsTr
  * @body    {number} points - Points to add
  * @body    {string} description - Description for the transaction
  */
-router.post("/user-scheme-points", authenticateAdmin as RequestHandler, (createPointsTransactionForUserScheme as unknown) as RequestHandler);
+router.post("/user-scheme-points", authenticateAdmin as RequestHandler, requirePermission("transactions:write") as RequestHandler, (createPointsTransactionForUserScheme as unknown) as RequestHandler);
 
 export default router;

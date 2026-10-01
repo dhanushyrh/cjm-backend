@@ -1,11 +1,15 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
+import { AdminRole } from "../rbac/permissions";
 
 class Admin extends Model {
   public id!: string;
   public name!: string;
   public email!: string;
   public password!: string;
+  public role!: AdminRole;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
 Admin.init(
@@ -27,6 +31,14 @@ Admin.init(
     password: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    role: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: AdminRole.ADMIN,
+      validate: {
+        isIn: [Object.values(AdminRole)],
+      },
     },
   },
   {

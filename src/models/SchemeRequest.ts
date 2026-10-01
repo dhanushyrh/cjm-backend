@@ -10,6 +10,7 @@ class SchemeRequest extends Model {
   public convenient_time!: string;
   public is_addressed!: boolean;
   public comments!: string | null;
+  public updatedBy!: string | null;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -54,7 +55,11 @@ SchemeRequest.init(
     comments: {
       type: DataTypes.TEXT,
       allowNull: true,
-    }
+    },
+    updatedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
   },
   {
     sequelize,

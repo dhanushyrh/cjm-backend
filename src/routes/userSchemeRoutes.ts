@@ -1,5 +1,5 @@
 import express, { RequestHandler } from "express";
-import { authenticateAdmin, authenticateUser } from "../middleware/authMiddleware";
+import { authenticateAdmin, authenticateUser, requirePermission } from "../middleware/authMiddleware";
 import * as userSchemeController from "../controllers/userSchemeController";
 
 const router = express.Router();
@@ -53,7 +53,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/", authenticateAdmin as RequestHandler, userSchemeController.createUserScheme);
+router.post("/", authenticateAdmin as RequestHandler, requirePermission("users:update") as RequestHandler, userSchemeController.createUserScheme);
 
 /**
  * @swagger
@@ -168,7 +168,7 @@ router.get("/active/:userId/:schemeId", authenticateUser as RequestHandler, user
  *       401:
  *         description: Unauthorized
  */
-router.patch("/:userSchemeId/status", authenticateAdmin as RequestHandler, userSchemeController.updateUserSchemeStatus);
+router.patch("/:userSchemeId/status", authenticateAdmin as RequestHandler, requirePermission("users:update") as RequestHandler, userSchemeController.updateUserSchemeStatus);
 
 /**
  * @swagger
@@ -303,7 +303,7 @@ router.get("/expired", authenticateUser as RequestHandler as RequestHandler, use
  *       403:
  *         description: Forbidden - Admin access required
  */
-router.get("/admin/all", authenticateAdmin as RequestHandler, userSchemeController.getAllUserSchemes);
+router.get("/admin/all", authenticateAdmin as RequestHandler, requirePermission("users:read") as RequestHandler, userSchemeController.getAllUserSchemes);
 
 /**
  * @swagger
@@ -381,7 +381,7 @@ router.patch("/:userSchemeId/desired-item", authenticateUser as RequestHandler, 
  *       500:
  *         description: Server error
  */
-router.post("/convert-points-to-gold", authenticateAdmin as RequestHandler, userSchemeController.triggerConvertPointsToAccruedGold);
+router.post("/convert-points-to-gold", authenticateAdmin as RequestHandler, requirePermission("transactions:write") as RequestHandler, userSchemeController.triggerConvertPointsToAccruedGold);
 
 /**
  * @swagger

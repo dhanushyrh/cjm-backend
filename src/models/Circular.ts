@@ -13,11 +13,13 @@ interface CircularAttributes {
   end_date?: Date;
   priority: number;
   is_deleted: boolean;
+  created_by?: string | null;
+  updated_by?: string | null;
   created_at: Date;
   updated_at: Date;
 }
 
-interface CircularCreationAttributes extends Optional<CircularAttributes, 'id' | 'created_at' | 'updated_at'> {}
+interface CircularCreationAttributes extends Optional<CircularAttributes, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'> {}
 
 export class Circular extends Model<CircularAttributes, CircularCreationAttributes> {
   public id!: string;
@@ -30,6 +32,8 @@ export class Circular extends Model<CircularAttributes, CircularCreationAttribut
   public end_date!: Date | null;
   public priority!: number;
   public is_deleted!: boolean;
+  public created_by!: string | null;
+  public updated_by!: string | null;
 
   // Timestamps
   public readonly created_at!: Date;
@@ -84,6 +88,14 @@ Circular.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    created_by: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    updated_by: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,

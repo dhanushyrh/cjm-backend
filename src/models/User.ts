@@ -21,6 +21,8 @@ class User extends Model {
   public profile_image?: string;
   public id_proof?: string;
   public referred_by?: string;
+  public createdBy!: string | null;
+  public updatedBy!: string | null;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -113,6 +115,14 @@ User.init(
         model: "Users",
         key: "id"
       }
+    },
+    createdBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    updatedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
   },
   {

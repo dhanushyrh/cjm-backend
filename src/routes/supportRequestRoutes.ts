@@ -2,6 +2,7 @@ import express, { RequestHandler } from "express";
 import {
   authenticateAdmin,
   authenticateUser,
+  requirePermission,
 } from "../middleware/authMiddleware";
 import * as supportRequestController from "../controllers/supportRequestController";
 
@@ -93,6 +94,7 @@ router.get(
 router.get(
   "/admin/all",
   authenticateAdmin as RequestHandler,
+  requirePermission("support_requests:read") as RequestHandler,
   supportRequestController.getAllRequests
 );
 
@@ -108,6 +110,7 @@ router.get(
 router.get(
   "/:id",
   authenticateAdmin as RequestHandler,
+  requirePermission("support_requests:read") as RequestHandler,
   supportRequestController.getRequestById
 );
 
@@ -135,6 +138,7 @@ router.get(
 router.patch(
   "/:id",
   authenticateAdmin as RequestHandler,
+  requirePermission("support_requests:update") as RequestHandler,
   supportRequestController.updateRequest
 );
 

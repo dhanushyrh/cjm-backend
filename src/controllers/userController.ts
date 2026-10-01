@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getAllUsers, deleteUser, updateUserActiveStatus, findUserByUserId, getUserById, updateUserDetails } from "../services/userService";
 import { serializeUser, serializeUsers } from "../serializers/userSerializer";
 import User from "../models/User";
+import { AuthRequest, getActingAdminId } from "../middleware/authMiddleware";
 
 export const fetchUsers = async (req: Request, res: Response) => {
   try {
@@ -260,7 +261,8 @@ export const updateUserDetailsController = async (req: Request, res: Response) =
       nominee,
       relation,
       profile_image,
-      id_proof
+      id_proof,
+      updatedBy: getActingAdminId(req as AuthRequest) || null,
     });
 
     const serializedUser = serializeUser(updatedUser);

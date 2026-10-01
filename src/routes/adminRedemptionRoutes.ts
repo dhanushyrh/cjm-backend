@@ -1,6 +1,6 @@
 import express, { RequestHandler } from "express";
 import { getRedemptionRequests, updateRedemptionStatus } from "../controllers/adminRedemptionController";
-import { authenticateAdmin } from "../middleware/authMiddleware";
+import { authenticateAdmin, requirePermission } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -68,6 +68,7 @@ const router = express.Router();
  *         description: Not an admin
  */
 router.use(authenticateAdmin as RequestHandler);
+router.use(requirePermission("redemptions:read") as RequestHandler);
 router.get("/requests", (getRedemptionRequests as unknown) as RequestHandler);
 
 /**

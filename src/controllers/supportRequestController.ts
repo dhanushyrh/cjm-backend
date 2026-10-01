@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AuthRequest } from "../middleware/authMiddleware";
+import { AuthRequest, getActingAdminId } from "../middleware/authMiddleware";
 import * as supportRequestService from "../services/supportRequestService";
 import { SupportRequestStatus } from "../models/SupportRequest";
 
@@ -214,6 +214,7 @@ export const updateRequest = async (req: Request, res: Response) => {
     const updates: {
       status?: SupportRequestStatus;
       admin_remarks?: string | null;
+      updatedBy?: string | null;
     } = {};
 
     if (status !== undefined) {
@@ -222,6 +223,7 @@ export const updateRequest = async (req: Request, res: Response) => {
     if (admin_remarks !== undefined) {
       updates.admin_remarks = admin_remarks;
     }
+    updates.updatedBy = getActingAdminId(req as AuthRequest) || null;
 
     const updatedRequest = await supportRequestService.updateSupportRequest(
       id,

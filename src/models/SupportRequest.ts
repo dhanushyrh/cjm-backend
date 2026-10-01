@@ -17,6 +17,7 @@ class SupportRequest extends Model {
   public image_file_ids!: string[];
   public status!: SupportRequestStatus;
   public admin_remarks!: string | null;
+  public updatedBy!: string | null;
   public is_deleted!: boolean;
 
   public readonly createdAt!: Date;
@@ -60,6 +61,10 @@ SupportRequest.init(
     },
     admin_remarks: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    updatedBy: {
+      type: DataTypes.UUID,
       allowNull: true,
     },
     is_deleted: {

@@ -33,6 +33,7 @@ export interface CreateDailyTaskInput {
   expires_at: Date;
   is_active?: boolean;
   created_by?: string;
+  updated_by?: string;
 }
 
 export const createDailyTask = async (input: CreateDailyTaskInput) => {
@@ -43,6 +44,7 @@ export const createDailyTask = async (input: CreateDailyTaskInput) => {
     expires_at: input.expires_at,
     is_active: input.is_active !== undefined ? input.is_active : true,
     created_by: input.created_by || null,
+    updated_by: input.updated_by || input.created_by || null,
     is_deleted: false,
   });
 };
@@ -60,6 +62,7 @@ export const updateDailyTask = async (
     ...(updates.task_date !== undefined ? { task_date: updates.task_date } : {}),
     ...(updates.expires_at !== undefined ? { expires_at: updates.expires_at } : {}),
     ...(updates.is_active !== undefined ? { is_active: updates.is_active } : {}),
+    ...(updates.updated_by !== undefined ? { updated_by: updates.updated_by } : {}),
   });
   return task;
 };

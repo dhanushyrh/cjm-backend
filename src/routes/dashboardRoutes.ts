@@ -1,11 +1,12 @@
 import { RequestHandler, Router } from "express";
 import { getDashboard } from "../controllers/dashboardController";
-import { authenticateAdmin } from "../middleware/authMiddleware";
+import { authenticateAdmin, requirePermission } from "../middleware/authMiddleware";
 
 const router = Router();
 
 // All dashboard routes require admin authentication
 router.use(authenticateAdmin as RequestHandler);
+router.use(requirePermission("dashboard:read") as RequestHandler);
 
 /**
  * @swagger

@@ -1,5 +1,5 @@
 import express, { Router, RequestHandler } from "express";
-import { registerAdmin, loginAdmin, registerUser } from "../controllers/adminAuthController";
+import { registerAdmin, loginAdmin, registerUser, createStaff, listStaff, getMe } from "../controllers/adminAuthController";
 import { fetchUsers, updateUserStatus, searchUserByUserId, fetchUserById, updateUserDetailsController } from "../controllers/userController";
 import { removeUser } from "../controllers/userController";
 import { addScheme, fetchSchemes, fetchSchemeById, modifyScheme, removeScheme } from "../controllers/schemeController";
@@ -14,7 +14,8 @@ import {
 import { updateCertificateDeliveryStatus } from "../controllers/userSchemeController";
 import { getDashboardStats } from "../services/dashboardService";
 import { triggerGoldAccrual } from "../controllers/adminRedemptionController";
-import { AdminRequest, authenticateAdmin } from "../middleware/authMiddleware";
+import { AdminRequest, authenticateAdmin, requirePermission, requireAdminRole } from "../middleware/authMiddleware";
+import { AdminRole } from "../rbac/permissions";
 const router: Router = express.Router();
 
 /**
@@ -48,7 +49,7 @@ const router: Router = express.Router();
  *       400:
  *         description: Invalid input data
  */
-router.post("/register", registerAdmin as RequestHandler);
+// Register moved below login (ADMIN-only)
 
 /**
  * @swagger
@@ -86,6 +87,29 @@ router.post("/register", registerAdmin as RequestHandler);
  *         description: Invalid credentials
  */
 router.post("/login", loginAdmin as RequestHandler);
+
+router.get("/me", authenticateAdmin as RequestHandler, getMe as RequestHandler);
+
+router.get(
+  "/staff",
+  authenticateAdmin as RequestHandler,
+  requirePermission("staff:manage") as RequestHandler,
+  listStaff as RequestHandler
+);
+router.post(
+  "/staff",
+  authenticateAdmin as RequestHandler,
+  requirePermission("staff:manage") as RequestHandler,
+  createStaff as RequestHandler
+);
+
+// Creating full admins requires ADMIN role
+router.post(
+  "/register",
+  authenticateAdmin as RequestHandler,
+  requireAdminRole(AdminRole.ADMIN) as RequestHandler,
+  registerAdmin as RequestHandler
+);
 
 /**
  * @swagger
@@ -254,7 +278,7 @@ router.post("/login", loginAdmin as RequestHandler);
  *       500:
  *         description: Server error
  */
-router.get("/dashboard", authenticateAdmin as RequestHandler, async (req: AdminRequest, res) => {
+router.get("/dashboard", authenticateAdmin as RequestHandler, requirePermission("dashboard:read") as RequestHandler, async (req: AdminRequest, res) => {
     try {
         const dashboardStats = await getDashboardStats();
         res.json({ 
@@ -350,7 +374,7 @@ router.get("/dashboard", authenticateAdmin as RequestHandler, async (req: AdminR
  *       401:
  *         description: Unauthorized
  */
-router.post("/user/register", authenticateAdmin as RequestHandler, registerUser as RequestHandler);
+router.post("/user/register", authenticateAdmin as RequestHandler, requirePermission("users:create") as RequestHandler, registerUser as RequestHandler);
 
 /**
  * @swagger
@@ -454,7 +478,7 @@ router.post("/user/register", authenticateAdmin as RequestHandler, registerUser 
  *       401:
  *         description: Unauthorized
  */
-router.get("/users", authenticateAdmin as RequestHandler, fetchUsers as RequestHandler);
+router.get("/users", authenticateAdmin as RequestHandler, requirePermission("users:read") as RequestHandler, fetchUsers as RequestHandler);
 
 /**
  * @swagger
@@ -510,7 +534,7 @@ router.get("/users", authenticateAdmin as RequestHandler, fetchUsers as RequestH
  *       500:
  *         description: Server error
  */
-router.get("/user/:userId", authenticateAdmin as RequestHandler, fetchUserById as RequestHandler);
+router.get("/user/:userId", authenticateAdmin as RequestHandler, requirePermission("users:read") as RequestHandler, fetchUserById as RequestHandler);
 
 /**
  * @swagger
@@ -535,7 +559,7 @@ router.get("/user/:userId", authenticateAdmin as RequestHandler, fetchUserById a
  *       404:
  *         description: User not found
  */
-router.delete("/user/:userId", authenticateAdmin as RequestHandler, removeUser as RequestHandler);
+router.delete("/user/:userId", authenticateAdmin as RequestHandler, requirePermission("users:delete") as RequestHandler, removeUser as RequestHandler);
 
 /**
  * @swagger
@@ -578,7 +602,7 @@ router.delete("/user/:userId", authenticateAdmin as RequestHandler, removeUser a
  *       500:
  *         description: Server error
  */
-router.patch("/users/:userId/status", authenticateAdmin as RequestHandler, updateUserStatus as RequestHandler);
+router.patch("/users/:userId/status", authenticateAdmin as RequestHandler, requirePermission("users:update") as RequestHandler, updateUserStatus as RequestHandler);
 
 /**
  * @swagger
@@ -668,7 +692,7 @@ router.patch("/users/:userId/status", authenticateAdmin as RequestHandler, updat
  *       500:
  *         description: Server error
  */
-router.get("/users/search/:userId", authenticateAdmin as RequestHandler, searchUserByUserId as RequestHandler);
+router.get("/users/search/:userId", authenticateAdmin as RequestHandler, requirePermission("users:lookup") as RequestHandler, searchUserByUserId as RequestHandler);
 
 /**
  * @swagger
@@ -759,7 +783,7 @@ router.get("/users/search/:userId", authenticateAdmin as RequestHandler, searchU
  *       500:
  *         description: Server error
  */
-router.put("/user/:userId", authenticateAdmin as RequestHandler, updateUserDetailsController as RequestHandler);
+router.put("/user/:userId", authenticateAdmin as RequestHandler, requirePermission("users:update") as RequestHandler, updateUserDetailsController as RequestHandler);
 
 // Scheme Management
 /**
@@ -801,7 +825,7 @@ router.put("/user/:userId", authenticateAdmin as RequestHandler, updateUserDetai
  *       401:
  *         description: Unauthorized
  */
-router.post("/scheme", authenticateAdmin as RequestHandler, addScheme as RequestHandler);
+router.post("/scheme", authenticateAdmin as RequestHandler, requirePermission("schemes:create") as RequestHandler, addScheme as RequestHandler);
 
 /**
  * @swagger
@@ -879,7 +903,7 @@ router.post("/scheme", authenticateAdmin as RequestHandler, addScheme as Request
  *       401:
  *         description: Unauthorized
  */
-router.get("/schemes", authenticateAdmin as RequestHandler, fetchSchemes as RequestHandler);
+router.get("/schemes", authenticateAdmin as RequestHandler, requirePermission("schemes:read") as RequestHandler, fetchSchemes as RequestHandler);
 
 /**
  * @swagger
@@ -959,10 +983,10 @@ router.get("/schemes", authenticateAdmin as RequestHandler, fetchSchemes as Requ
  *       404:
  *         description: Scheme not found
  */
-router.get("/scheme/:id", authenticateAdmin as RequestHandler, fetchSchemeById as RequestHandler);
-router.put("/scheme/:id", authenticateAdmin as RequestHandler, modifyScheme as RequestHandler);
-router.delete("/scheme/:id", authenticateAdmin as RequestHandler, removeScheme as RequestHandler);
-router.get('/accrued-gold', authenticateAdmin as RequestHandler, (triggerGoldAccrual as unknown) as RequestHandler);
+router.get("/scheme/:id", authenticateAdmin as RequestHandler, requirePermission("schemes:read") as RequestHandler, fetchSchemeById as RequestHandler);
+router.put("/scheme/:id", authenticateAdmin as RequestHandler, requirePermission("schemes:update") as RequestHandler, modifyScheme as RequestHandler);
+router.delete("/scheme/:id", authenticateAdmin as RequestHandler, requirePermission("schemes:delete") as RequestHandler, removeScheme as RequestHandler);
+router.get('/accrued-gold', authenticateAdmin as RequestHandler, requirePermission('transactions:write') as RequestHandler, (triggerGoldAccrual as unknown) as RequestHandler);
 // Transaction Management
 /**
  * @swagger
@@ -1004,7 +1028,7 @@ router.get('/accrued-gold', authenticateAdmin as RequestHandler, (triggerGoldAcc
  *       401:
  *         description: Unauthorized
  */
-router.post("/transaction", authenticateAdmin as RequestHandler, addTransaction as RequestHandler);
+router.post("/transaction", authenticateAdmin as RequestHandler, requirePermission("transactions:write") as RequestHandler, addTransaction as RequestHandler);
 
 /**
  * @swagger
@@ -1072,7 +1096,7 @@ router.post("/transaction", authenticateAdmin as RequestHandler, addTransaction 
  *       401:
  *         description: Unauthorized
  */
-router.get("/transactions/:userId", authenticateAdmin as RequestHandler, fetchUserTransactions as RequestHandler);
+router.get("/transactions/:userId", authenticateAdmin as RequestHandler, requirePermission("transactions:read") as RequestHandler, fetchUserTransactions as RequestHandler);
 
 /**
  * @swagger
@@ -1140,7 +1164,7 @@ router.get("/transactions/:userId", authenticateAdmin as RequestHandler, fetchUs
  *       401:
  *         description: Unauthorized
  */
-router.get("/transactions/:schemeId", authenticateAdmin as RequestHandler, fetchSchemeTransactions as RequestHandler);
+router.get("/transactions/:schemeId", authenticateAdmin as RequestHandler, requirePermission("transactions:read") as RequestHandler, fetchSchemeTransactions as RequestHandler);
 
 /**
  * @swagger
@@ -1211,7 +1235,7 @@ router.get("/transactions/:schemeId", authenticateAdmin as RequestHandler, fetch
  *       404:
  *         description: User scheme not found
  */
-router.get("/userScheme/transactions/:userSchemeId", authenticateAdmin as RequestHandler, fetchUserSchemeTransactions as RequestHandler);
+router.get("/userScheme/transactions/:userSchemeId", authenticateAdmin as RequestHandler, requirePermission("transactions:read") as RequestHandler, fetchUserSchemeTransactions as RequestHandler);
 
 /**
  * @swagger
@@ -1236,7 +1260,7 @@ router.get("/userScheme/transactions/:userSchemeId", authenticateAdmin as Reques
  *       404:
  *         description: Transaction not found
  */
-router.delete("/transaction/:id", authenticateAdmin as RequestHandler, removeTransaction as RequestHandler);
+router.delete("/transaction/:id", authenticateAdmin as RequestHandler, requirePermission("transactions:write") as RequestHandler, removeTransaction as RequestHandler);
 
 /**
  * @swagger
@@ -1289,7 +1313,7 @@ router.delete("/transaction/:id", authenticateAdmin as RequestHandler, removeTra
  *       500:
  *         description: Server error
  */
-router.get("/userScheme/:userSchemeId/summary", authenticateAdmin as RequestHandler, getSchemeTransactionSummary as RequestHandler);
+router.get("/userScheme/:userSchemeId/summary", authenticateAdmin as RequestHandler, requirePermission("transactions:read") as RequestHandler, getSchemeTransactionSummary as RequestHandler);
 
 /**
  * @swagger
@@ -1345,6 +1369,6 @@ router.get("/userScheme/:userSchemeId/summary", authenticateAdmin as RequestHand
  *       500:
  *         description: Server error
  */
-router.patch("/userScheme/:userSchemeId/certificate", authenticateAdmin as RequestHandler, updateCertificateDeliveryStatus as RequestHandler);
+router.patch("/userScheme/:userSchemeId/certificate", authenticateAdmin as RequestHandler, requirePermission("users:update") as RequestHandler, updateCertificateDeliveryStatus as RequestHandler);
 
 export default router;

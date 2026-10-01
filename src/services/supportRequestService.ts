@@ -106,6 +106,7 @@ export const updateSupportRequest = async (
   updates: {
     status?: SupportRequestStatus;
     admin_remarks?: string | null;
+    updatedBy?: string | null;
   }
 ) => {
   const request = await SupportRequest.findOne({

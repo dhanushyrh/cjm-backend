@@ -1,6 +1,6 @@
 import { Router, RequestHandler } from "express";
 import * as circularController from "../controllers/circularController";
-import { authenticateUser, authenticateAdmin } from "../middleware/authMiddleware";
+import { authenticateUser, authenticateAdmin, requirePermission } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -47,7 +47,7 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.post("/", authenticateAdmin as RequestHandler, circularController.createCircular as RequestHandler);
+router.post("/", authenticateAdmin as RequestHandler, requirePermission("circulars:create") as RequestHandler, circularController.createCircular as RequestHandler);
 
 /**
  * @swagger
@@ -95,7 +95,7 @@ router.post("/", authenticateAdmin as RequestHandler, circularController.createC
  *       500:
  *         description: Server error
  */
-router.put("/:circularId", authenticateAdmin as RequestHandler, circularController.updateCircular as RequestHandler);
+router.put("/:circularId", authenticateAdmin as RequestHandler, requirePermission("circulars:update") as RequestHandler, circularController.updateCircular as RequestHandler);
 
 /**
  * @swagger
@@ -123,7 +123,7 @@ router.put("/:circularId", authenticateAdmin as RequestHandler, circularControll
  *       500:
  *         description: Server error
  */
-router.delete("/:circularId", authenticateAdmin as RequestHandler, circularController.deleteCircular as RequestHandler);
+router.delete("/:circularId", authenticateAdmin as RequestHandler, requirePermission("circulars:delete") as RequestHandler, circularController.deleteCircular as RequestHandler);
 
 /**
  * @swagger
@@ -149,7 +149,7 @@ router.delete("/:circularId", authenticateAdmin as RequestHandler, circularContr
  *       500:
  *         description: Server error
  */
-router.get("/:circularId", authenticateAdmin as RequestHandler, circularController.getCircular as RequestHandler);
+router.get("/:circularId", authenticateAdmin as RequestHandler, requirePermission("circulars:read") as RequestHandler, circularController.getCircular as RequestHandler);
 
 /**
  * @swagger
@@ -182,7 +182,7 @@ router.get("/:circularId", authenticateAdmin as RequestHandler, circularControll
  *       500:
  *         description: Server error
  */
-router.get("/", authenticateAdmin as RequestHandler, circularController.getAllCirculars as RequestHandler);
+router.get("/", authenticateAdmin as RequestHandler, requirePermission("circulars:read") as RequestHandler, circularController.getAllCirculars as RequestHandler);
 
 /**
  * @swagger
@@ -215,7 +215,7 @@ router.get("/", authenticateAdmin as RequestHandler, circularController.getAllCi
  *       500:
  *         description: Server error
  */
-router.get("/active/list", authenticateAdmin as RequestHandler, (circularController.getActiveCirculars as unknown) as RequestHandler);
+router.get("/active/list", authenticateAdmin as RequestHandler, requirePermission("circulars:read") as RequestHandler, (circularController.getActiveCirculars as unknown) as RequestHandler);
 
 /**
  * @swagger
@@ -300,7 +300,7 @@ router.post("/:circularId/view", authenticateUser as RequestHandler, circularCon
  *       500:
  *         description: Server error
  */
-router.get("/:circularId/view-count", authenticateAdmin as RequestHandler, circularController.getCircularViewCount as RequestHandler);
+router.get("/:circularId/view-count", authenticateAdmin as RequestHandler, requirePermission("circulars:read") as RequestHandler, circularController.getCircularViewCount as RequestHandler);
 
 /**
  * @swagger
@@ -339,7 +339,7 @@ router.get("/:circularId/view-count", authenticateAdmin as RequestHandler, circu
  *       500:
  *         description: Server error
  */
-router.get("/:circularId/view-details", authenticateAdmin as RequestHandler, circularController.getCircularViewDetails as RequestHandler);
+router.get("/:circularId/view-details", authenticateAdmin as RequestHandler, requirePermission("circulars:read") as RequestHandler, circularController.getCircularViewDetails as RequestHandler);
 
 /**
  * @swagger

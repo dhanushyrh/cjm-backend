@@ -1,6 +1,6 @@
 import express, { RequestHandler } from 'express';
 import * as fileController from '../controllers/fileController';
-import { authenticateAdmin, authenticateUser } from '../middleware/authMiddleware';
+import { authenticateAdmin, authenticateUser, requirePermission } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -50,7 +50,7 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.post('/upload-url', authenticateAdmin as RequestHandler, fileController.getPresignedUrl);
+router.post('/upload-url', authenticateAdmin as RequestHandler, requirePermission('files:upload') as RequestHandler, fileController.getPresignedUrl);
 router.post(
   '/user-upload-url',
   authenticateUser as RequestHandler,
@@ -71,7 +71,7 @@ router.post(
  *       500:
  *         description: Server error
  */
-router.get('/test-config', authenticateAdmin as RequestHandler, async (req, res) => {
+router.get('/test-config', authenticateAdmin as RequestHandler, requirePermission('files:read') as RequestHandler, async (req, res) => {
   try {
     // Check S3 configuration
     const s3Config = {
@@ -162,7 +162,7 @@ router.get('/test-config', authenticateAdmin as RequestHandler, async (req, res)
  *       500:
  *         description: Server error
  */
-router.get('/user/:userId/:purpose', authenticateAdmin as RequestHandler, fileController.getUserFilesByPurpose);
+router.get('/user/:userId/:purpose', authenticateAdmin as RequestHandler, requirePermission('files:read') as RequestHandler, fileController.getUserFilesByPurpose);
 
 /**
  * @swagger
@@ -204,7 +204,7 @@ router.get('/user/:userId/:purpose', authenticateAdmin as RequestHandler, fileCo
  *       500:
  *         description: Server error
  */
-router.post('/update-user-profile', authenticateAdmin as RequestHandler, fileController.updateUserProfile);
+router.post('/update-user-profile', authenticateAdmin as RequestHandler, requirePermission('files:read') as RequestHandler, fileController.updateUserProfile);
 
 /**
  * @swagger
@@ -231,7 +231,7 @@ router.post('/update-user-profile', authenticateAdmin as RequestHandler, fileCon
  *       500:
  *         description: Server error
  */
-router.get('/:fileId', authenticateAdmin as RequestHandler, fileController.getFileById);
+router.get('/:fileId', authenticateAdmin as RequestHandler, requirePermission('files:read') as RequestHandler, fileController.getFileById);
 
 /**
  * @swagger
@@ -258,7 +258,7 @@ router.get('/:fileId', authenticateAdmin as RequestHandler, fileController.getFi
  *       500:
  *         description: Server error
  */
-router.delete('/:fileId', authenticateAdmin as RequestHandler, fileController.deleteFile);
+router.delete('/:fileId', authenticateAdmin as RequestHandler, requirePermission('files:read') as RequestHandler, fileController.deleteFile);
 
 /**
  * @swagger
@@ -317,7 +317,7 @@ router.delete('/:fileId', authenticateAdmin as RequestHandler, fileController.de
  *       500:
  *         description: Server error
  */
-router.get('/access/:fileId', authenticateAdmin as RequestHandler, fileController.getFileAccessUrl);
+router.get('/access/:fileId', authenticateAdmin as RequestHandler, requirePermission('files:read') as RequestHandler, fileController.getFileAccessUrl);
 
 /**
  * @swagger

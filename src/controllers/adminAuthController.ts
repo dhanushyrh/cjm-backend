@@ -5,7 +5,7 @@ import Admin from "../models/Admin";
 import User from "../models/User";
 import { hashAdminPassword, compareAdminPassword, generateAdminToken } from "../services/adminAuthService";
 import { hashPassword } from "../services/authService";
-import { serializeAdmin } from "../serializers/adminSerializer";
+import { serializeAdmin, serializeAdmins } from "../serializers/adminSerializer";
 import { serializeUser } from "../serializers/userSerializer";
 import { createUserScheme } from "../services/userSchemeService";
 import { sendWelcomeEmail } from "../services/emailService";
@@ -14,8 +14,10 @@ import UserScheme from "../models/UserScheme";
 import Settings from "../models/Settings";
 import Scheme from "../models/Scheme";
 import { createTransaction } from "../services/transactionService";
+import { AdminRole } from "../rbac/permissions";
+import { AuthRequest, getActingAdminId } from "../middleware/authMiddleware";
 
-// Register a new admin
+// Register a new admin (ADMIN role only — gated at route layer)
 export const registerAdmin = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
@@ -27,7 +29,12 @@ export const registerAdmin = async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await hashAdminPassword(password);
-    const admin = await Admin.create({ name, email, password: hashedPassword });
+    const admin = await Admin.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: AdminRole.ADMIN,
+    });
     const serializedAdmin = serializeAdmin(admin);
 
     res.status(201).json({ message: "Admin registered successfully!", admin: serializedAdmin });
@@ -46,6 +53,69 @@ export const registerAdmin = async (req: Request, res: Response) => {
     }
     
     res.status(500).json({ error: "Failed to register admin" });
+  }
+};
+
+/** Create a STAFF account (ADMIN only). */
+export const createStaff = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "name, email, and password are required" });
+    }
+
+    const existingAdmin = await Admin.findOne({ where: { email } });
+    if (existingAdmin) {
+      return res.status(400).json({ error: "Account with this email already exists" });
+    }
+
+    const hashedPassword = await hashAdminPassword(password);
+    const staff = await Admin.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: AdminRole.STAFF,
+    });
+
+    res.status(201).json({
+      message: "Staff account created successfully",
+      admin: serializeAdmin(staff),
+    });
+  } catch (error: any) {
+    console.error("Create Staff Error:", error);
+    res.status(500).json({ error: "Failed to create staff account" });
+  }
+};
+
+/** List staff accounts (ADMIN only). */
+export const listStaff = async (_req: Request, res: Response) => {
+  try {
+    const staff = await Admin.findAll({
+      where: { role: AdminRole.STAFF },
+      order: [["createdAt", "DESC"]],
+    });
+    res.json({ success: true, data: serializeAdmins(staff) });
+  } catch (error: any) {
+    console.error("List Staff Error:", error);
+    res.status(500).json({ error: "Failed to list staff" });
+  }
+};
+
+/** Current authenticated admin/staff profile. */
+export const getMe = async (req: AuthRequest, res: Response) => {
+  try {
+    const id = getActingAdminId(req);
+    if (!id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const admin = await Admin.findByPk(id);
+    if (!admin) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+    res.json({ message: "OK", data: serializeAdmin(admin) });
+  } catch (error: any) {
+    console.error("Get Me Error:", error);
+    res.status(500).json({ error: "Failed to fetch profile" });
   }
 };
 
@@ -68,7 +138,8 @@ export const loginAdmin = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const token = generateAdminToken(admin.id);
+    const role = admin.role || AdminRole.ADMIN;
+    const token = generateAdminToken(admin.id, role);
     const serializedAdmin = serializeAdmin(admin);
 
     res.json({ 
@@ -178,7 +249,9 @@ export const registerUser = async (req: Request, res: Response) => {
         profile_image: profile_image || null,
         id_proof: id_proof || null,
         userId: uniqueUserId,
-        referred_by: referrerId
+        referred_by: referrerId,
+        createdBy: getActingAdminId(req as AuthRequest) || null,
+        updatedBy: getActingAdminId(req as AuthRequest) || null,
       }, { transaction: t });
 
       // Create user-scheme mapping and initial deposit only if schemeId is provided

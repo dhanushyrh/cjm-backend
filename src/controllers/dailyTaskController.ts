@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AuthRequest } from "../middleware/authMiddleware";
+import { AuthRequest, getActingAdminId } from "../middleware/authMiddleware";
 import * as dailyTaskService from "../services/dailyTaskService";
 import logger from "../config/logger";
 import { apiError, apiSuccess } from "../utils/apiError";
@@ -15,13 +15,15 @@ export const createDailyTask = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const actorId = getActingAdminId(req);
     const task = await dailyTaskService.createDailyTask({
       title,
       message,
       task_date,
       expires_at: new Date(expires_at),
       is_active,
-      created_by: req.user?.id,
+      created_by: actorId,
+      updated_by: actorId,
     });
 
     apiSuccess(res, task, "Daily task created successfully");
@@ -41,6 +43,7 @@ export const updateDailyTask = async (req: AuthRequest, res: Response) => {
       task_date,
       expires_at: expires_at ? new Date(expires_at) : undefined,
       is_active,
+      updated_by: getActingAdminId(req),
     });
     if (!task) {
       return apiError(res, { status: 404, message: "Daily task not found" });

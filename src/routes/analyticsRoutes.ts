@@ -1,6 +1,6 @@
 import express, { RequestHandler } from 'express';
 import { getAnalyticsData } from '../controllers/analyticsController';
-import { authenticateAdmin } from '../middleware/authMiddleware';
+import { authenticateAdmin, requirePermission } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -150,6 +150,6 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.get('/', authenticateAdmin as RequestHandler, getAnalyticsData as RequestHandler);
+router.get('/', authenticateAdmin as RequestHandler, requirePermission('analytics:read') as RequestHandler, getAnalyticsData as RequestHandler);
 
 export default router; 

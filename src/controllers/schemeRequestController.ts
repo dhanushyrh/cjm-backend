@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AuthRequest } from "../middleware/authMiddleware";
+import { AuthRequest, getActingAdminId } from "../middleware/authMiddleware";
 import * as schemeRequestService from "../services/schemeRequestService";
 
 // User endpoints
@@ -165,6 +165,7 @@ export const updateRequest = async (req: Request, res: Response) => {
     const updates: any = {};
     if (is_addressed !== undefined) updates.is_addressed = is_addressed;
     if (comments !== undefined) updates.comments = comments;
+    updates.updatedBy = getActingAdminId(req as AuthRequest) || null;
     
     const updatedRequest = await schemeRequestService.updateSchemeRequest(id, updates);
     

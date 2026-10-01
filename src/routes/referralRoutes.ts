@@ -5,7 +5,7 @@ import {
   getReferralList,
   getReferralDetail
 } from "../controllers/referralController";
-import { authenticateUser, authenticateAdmin } from "../middleware/authMiddleware";
+import { authenticateUser, authenticateAdmin, requirePermission } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -199,7 +199,7 @@ router.post("/", (authenticateUser as unknown) as RequestHandler, (createReferra
  *       500:
  *         description: Server error
  */
-router.get("/", (authenticateAdmin as unknown) as RequestHandler, (getReferralList as unknown) as RequestHandler);
+router.get("/", (authenticateAdmin as unknown) as RequestHandler, (requirePermission("referrals:read") as unknown) as RequestHandler, (getReferralList as unknown) as RequestHandler);
 
 /**
  * @swagger
@@ -234,7 +234,7 @@ router.get("/", (authenticateAdmin as unknown) as RequestHandler, (getReferralLi
  *       500:
  *         description: Server error
  */
-router.get("/:referralId", (authenticateAdmin as unknown) as RequestHandler, (getReferralDetail as unknown) as RequestHandler);
+router.get("/:referralId", (authenticateAdmin as unknown) as RequestHandler, (requirePermission("referrals:read") as unknown) as RequestHandler, (getReferralDetail as unknown) as RequestHandler);
 
 /**
  * @swagger
@@ -290,6 +290,6 @@ router.get("/:referralId", (authenticateAdmin as unknown) as RequestHandler, (ge
  *       500:
  *         description: Server error
  */
-router.put("/:referralId", (authenticateAdmin as unknown) as RequestHandler, (updateReferral as unknown) as RequestHandler);
+router.put("/:referralId", (authenticateAdmin as unknown) as RequestHandler, (requirePermission("referrals:update") as unknown) as RequestHandler, (updateReferral as unknown) as RequestHandler);
 
 export default router; 

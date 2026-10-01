@@ -5,11 +5,13 @@ import GoldPrice from "../models/GoldPrice";
 import { goldPriceEmitter } from "../events/goldPriceEvents";
 import { getLastNDaysGoldPrices, getPaginatedGoldPrices } from "../services/goldPriceService";
 import { softDeleteBonusTransactions } from "../services/goldPriceBonusService";
+import { AuthRequest, getActingAdminId } from "../middleware/authMiddleware";
 
 // Add or update daily gold price
 export const setGoldPrice = async (req: Request, res: Response) => {
   try {
     const { date, pricePerGram } = req.body;
+    const actorId = getActingAdminId(req as AuthRequest) || null;
 
     // Validate required fields
     if (!date || !pricePerGram) {
@@ -55,7 +57,10 @@ export const setGoldPrice = async (req: Request, res: Response) => {
       // If exists, mark it as deleted and handle associated transactions
       if (existingPrice) {
         // First update the gold price
-        await existingPrice.update({ is_deleted: true }, { transaction: t });
+        await existingPrice.update(
+          { is_deleted: true, updatedBy: actorId },
+          { transaction: t }
+        );
         
         // Then soft delete all bonus transactions associated with this price
         // This will be handled separately to ensure user points are adjusted properly
@@ -64,7 +69,9 @@ export const setGoldPrice = async (req: Request, res: Response) => {
       // Create new price entry
       const newPrice = await GoldPrice.create({
         date: formattedDate,
-        pricePerGram
+        pricePerGram,
+        createdBy: actorId,
+        updatedBy: actorId,
       }, { transaction: t });
 
       return { newPrice, existingPriceId: existingPrice?.id };

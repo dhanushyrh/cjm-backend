@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AuthRequest } from "../middleware/authMiddleware";
+import { AuthRequest, getActingAdminId } from "../middleware/authMiddleware";
 import * as circularService from "../services/circularService";
 import logger from "../config/logger";
 import { validatePaginationParams } from "../utils/paginationHelper";
@@ -9,6 +9,7 @@ import { apiError, apiSuccess } from "../utils/apiError";
 export const createCircular = async (req: Request, res: Response) => {
   try {
     const { title, description, image_url, link, is_active, start_date, end_date, priority } = req.body;
+    const actorId = getActingAdminId(req as AuthRequest) || null;
 
     // Validate required fields
     if (!title || !description || !image_url || !start_date) {
@@ -28,7 +29,9 @@ export const createCircular = async (req: Request, res: Response) => {
       is_active: is_active !== undefined ? is_active : true,
       start_date: new Date(start_date),
       end_date: end_date ? new Date(end_date) : undefined,
-      priority
+      priority,
+      created_by: actorId,
+      updated_by: actorId,
     });
 
     apiSuccess(res, circular, "Circular created successfully");
@@ -81,6 +84,7 @@ export const updateCircular = async (req: Request, res: Response) => {
       updateData.end_date = new Date(end_date);
     }
     if (priority !== undefined) updateData.priority = priority;
+    updateData.updated_by = getActingAdminId(req as AuthRequest) || null;
 
     // Update circular
     const updatedCircular = await circularService.updateCircular(circularId, updateData);

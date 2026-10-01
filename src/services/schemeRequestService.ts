@@ -115,6 +115,7 @@ export const updateSchemeRequest = async (
   updates: {
     is_addressed?: boolean;
     comments?: string;
+    updatedBy?: string | null;
   }
 ) => {
   try {

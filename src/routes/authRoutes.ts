@@ -1,6 +1,6 @@
 import express, { Router, RequestHandler } from "express";
 import { loginUser, changeUserPassword, adminResetUserPassword } from "../controllers/authController";
-import { authenticateUser, authenticateAdmin } from "../middleware/authMiddleware";
+import { authenticateUser, authenticateAdmin, requirePermission } from "../middleware/authMiddleware";
 
 const router: Router = express.Router();
 
@@ -170,6 +170,6 @@ router.post("/change-password", authenticateUser as RequestHandler, changeUserPa
  *       500:
  *         description: Server error
  */
-router.post("/admin/reset-password", authenticateAdmin as RequestHandler, adminResetUserPassword as RequestHandler);
+router.post("/admin/reset-password", authenticateAdmin as RequestHandler, requirePermission("users:update") as RequestHandler, adminResetUserPassword as RequestHandler);
 
 export default router;

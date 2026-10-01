@@ -18,6 +18,8 @@ export interface CircularData {
   start_date: Date;
   end_date?: Date;
   priority?: number;
+  created_by?: string | null;
+  updated_by?: string | null;
 }
 
 // Interface representing a circular response with optional viewed status
@@ -47,7 +49,9 @@ export const createCircular = async (circularData: CircularData): Promise<Circul
     ...circularData,
     is_active: circularData.is_active !== undefined ? circularData.is_active : true,
     priority: circularData.priority !== undefined ? circularData.priority : 0,
-    is_deleted: false
+    is_deleted: false,
+    created_by: circularData.created_by || null,
+    updated_by: circularData.updated_by || circularData.created_by || null,
   });
 };
 

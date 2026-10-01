@@ -1,5 +1,5 @@
 import express, { RequestHandler } from "express";
-import { authenticateAdmin, authenticateUser } from "../middleware/authMiddleware";
+import { authenticateAdmin, authenticateUser, requirePermission } from "../middleware/authMiddleware";
 import * as notificationController from "../controllers/notificationController";
 
 const router = express.Router();
@@ -115,7 +115,7 @@ router.patch("/mark-all-viewed", authenticateUser as RequestHandler, notificatio
  *       403:
  *         description: Forbidden - Admin access required
  */
-router.post("/broadcast", authenticateAdmin as RequestHandler, notificationController.createBroadcastNotification);
+router.post("/broadcast", authenticateAdmin as RequestHandler, requirePermission("notifications:broadcast") as RequestHandler, notificationController.createBroadcastNotification);
 
 /**
  * @swagger
