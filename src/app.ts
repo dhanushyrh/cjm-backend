@@ -23,6 +23,7 @@ import circularRoutes from "./routes/circularRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import schemeRequestRoutes from "./routes/schemeRequestRoutes";
 import dailyTaskRoutes from "./routes/dailyTaskRoutes";
+import supportRequestRoutes from "./routes/supportRequestRoutes";
 import { startPointsRecalculationScheduler } from "./schedulers/pointsRecalculationScheduler";
 import { startGoldAccrualScheduler } from "./schedulers/goldAccrualScheduler";
 import { startMaturityRedemptionScheduler } from "./schedulers/maturityRedemptionScheduler";
@@ -90,6 +91,7 @@ app.use("/api/circulars", circularRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/scheme-requests", schemeRequestRoutes);
 app.use("/api/daily-tasks", dailyTaskRoutes);
+app.use("/api/support-requests", supportRequestRoutes);
 
 // Swagger documentation
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

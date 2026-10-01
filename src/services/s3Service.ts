@@ -54,7 +54,10 @@ export const getPresignedUrl = async (
   const uniqueFilename = generateUniqueFilename(fileName);
   const key = `${folderPath}${uniqueFilename}`;
   const bucket = getBucketForPurpose(purpose);
-  const maxBytes = purpose === 'DAILY_TASK_PROOF' ? 5 * 1024 * 1024 : 10485760;
+  const maxBytes =
+    purpose === 'DAILY_TASK_PROOF' || purpose === 'SUPPORT_IMAGE'
+      ? 5 * 1024 * 1024
+      : 10485760;
 
   const params: PresignedPostOptions = {
     Bucket: bucket,

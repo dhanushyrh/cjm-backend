@@ -54,7 +54,7 @@ router.post('/upload-url', authenticateAdmin as RequestHandler, fileController.g
 router.post(
   '/user-upload-url',
   authenticateUser as RequestHandler,
-  fileController.getUserDailyTaskProofUploadUrl as RequestHandler
+  fileController.getUserUploadUrl as RequestHandler
 );
 
 /**

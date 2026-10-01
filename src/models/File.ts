@@ -8,7 +8,8 @@ export type FilePurpose =
   | "OTHER"
   | "SUPPORTING_DOC"
   | "CIRCULAR"
-  | "DAILY_TASK_PROOF";
+  | "DAILY_TASK_PROOF"
+  | "SUPPORT_IMAGE";
 
 class File extends Model {
   public id!: string;

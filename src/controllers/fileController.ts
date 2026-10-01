@@ -26,6 +26,7 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
       'SUPPORTING_DOC',
       'CIRCULAR',
       'DAILY_TASK_PROOF',
+      'SUPPORT_IMAGE',
     ];
     if (!validPurposes.includes(purpose as FilePurpose)) {
       res.status(400).json({
@@ -36,12 +37,14 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
     }
 
     const maxSize =
-      purpose === 'DAILY_TASK_PROOF' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+      purpose === 'DAILY_TASK_PROOF' || purpose === 'SUPPORT_IMAGE'
+        ? 5 * 1024 * 1024
+        : 10 * 1024 * 1024;
     if (size > maxSize) {
       res.status(400).json({
         success: false,
         message:
-          purpose === 'DAILY_TASK_PROOF'
+          purpose === 'DAILY_TASK_PROOF' || purpose === 'SUPPORT_IMAGE'
             ? 'File too large (max 5MB)'
             : 'File too large (max 10MB)'
       });
@@ -55,7 +58,8 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
     if (
       (purpose === 'PROFILE_IMAGE' ||
         purpose === 'CIRCULAR' ||
-        purpose === 'DAILY_TASK_PROOF') &&
+        purpose === 'DAILY_TASK_PROOF' ||
+        purpose === 'SUPPORT_IMAGE') &&
       !validImageTypes.includes(mimeType)
     ) {
       res.status(400).json({
@@ -63,9 +67,11 @@ export const getPresignedUrl = async (req: Request, res: Response): Promise<void
         message:
           purpose === 'DAILY_TASK_PROOF'
             ? 'Invalid file type for task proof image'
-            : purpose === 'CIRCULAR'
-              ? 'Invalid file type for circular image'
-              : 'Invalid file type for profile image'
+            : purpose === 'SUPPORT_IMAGE'
+              ? 'Invalid file type for support image'
+              : purpose === 'CIRCULAR'
+                ? 'Invalid file type for circular image'
+                : 'Invalid file type for profile image'
       });
       return;
     }
@@ -141,6 +147,7 @@ export const getUserFilesByPurpose = async (req: Request, res: Response): Promis
       'SUPPORTING_DOC',
       'CIRCULAR',
       'DAILY_TASK_PROOF',
+      'SUPPORT_IMAGE',
     ];
     if (!validPurposes.includes(purpose as FilePurpose)) {
       res.status(400).json({
@@ -361,14 +368,14 @@ export const getUserFileAccessUrl = async (req: Request, res: Response): Promise
   }
 };
 
-/** Authenticated user upload URL — only DAILY_TASK_PROOF (≤5MB images). */
-export const getUserDailyTaskProofUploadUrl = async (
+/** Authenticated user upload URL — DAILY_TASK_PROOF or SUPPORT_IMAGE (≤5MB images). */
+export const getUserUploadUrl = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const userId = (req as any).user?.id;
-    const { originalName, mimeType, size } = req.body;
+    const { originalName, mimeType, size, purpose: rawPurpose } = req.body;
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -383,11 +390,24 @@ export const getUserDailyTaskProofUploadUrl = async (
       return;
     }
 
+    const allowedPurposes: FilePurpose[] = ['DAILY_TASK_PROOF', 'SUPPORT_IMAGE'];
+    const purpose = (rawPurpose as FilePurpose) || 'DAILY_TASK_PROOF';
+    if (!allowedPurposes.includes(purpose)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid purpose. Allowed: DAILY_TASK_PROOF, SUPPORT_IMAGE',
+      });
+      return;
+    }
+
     const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
     if (!validImageTypes.includes(mimeType)) {
       res.status(400).json({
         success: false,
-        message: 'Invalid file type for task proof image',
+        message:
+          purpose === 'SUPPORT_IMAGE'
+            ? 'Invalid file type for support image'
+            : 'Invalid file type for task proof image',
       });
       return;
     }
@@ -405,7 +425,7 @@ export const getUserDailyTaskProofUploadUrl = async (
       mimeType,
       size: Number(size),
       userId,
-      purpose: 'DAILY_TASK_PROOF',
+      purpose,
     });
 
     res.status(200).json({
@@ -413,11 +433,14 @@ export const getUserDailyTaskProofUploadUrl = async (
       data: result,
     });
   } catch (error: any) {
-    console.error('Error generating daily task proof upload URL:', error);
+    console.error('Error generating user upload URL:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to generate upload URL',
     });
   }
 };
+
+/** @deprecated Use getUserUploadUrl */
+export const getUserDailyTaskProofUploadUrl = getUserUploadUrl;
  

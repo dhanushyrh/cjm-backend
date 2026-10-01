@@ -15,6 +15,7 @@ import SchemeRequest from "./SchemeRequest";
 import Notification from "./Notification";
 import DailyTask from "./DailyTask";
 import DailyTaskSubmission from "./DailyTaskSubmission";
+import SupportRequest from "./SupportRequest";
 
 export const setupAssociations = () => {
   // User <-> UserScheme associations
@@ -163,5 +164,15 @@ export const setupAssociations = () => {
   DailyTask.belongsTo(Admin, {
     foreignKey: "created_by",
     as: "creator",
+  });
+
+  // Support requests
+  SupportRequest.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+  User.hasMany(SupportRequest, {
+    foreignKey: "userId",
+    as: "supportRequests",
   });
 }; 
